@@ -2,6 +2,7 @@
 title: Redis practise（二）使用Docker部署Redis高可用，分布式集群
 date: 2016-08-22 13:46:31
 tags: Redis
+categories: Redis
 ---
 
 ####  思路

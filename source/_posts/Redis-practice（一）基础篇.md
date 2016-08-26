@@ -2,6 +2,7 @@
 title: Redis practice（一）基础篇
 date: 2016-08-22 13:42:33
 tags: Redis
+categories: Redis
 ---
 
 #### 引言
