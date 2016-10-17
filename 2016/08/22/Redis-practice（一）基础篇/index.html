@@ -1,0 +1,994 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Redis," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1" />
+
+
+
+
+
+
+<meta name="description" content="引言
+先罗列一下缓存的基本概念。
+
+所有类型的缓存：
+
+L1 L2: CPU缓存（Cache Memory）是位于CPU与内存之间的临时存储器，它的容量比内存小的多但是交换速度却比内存要快得多
+DB cache(mysql query cache)
+Brower
+CDN
+Mobile image cache
+
+那些数据适合缓存：
+
+热点数据：top10，秒杀
+中间结果：比如哨兵的报警表达式触发次数">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis practice（一）基础篇">
+<meta property="og:url" content="https://professorlea.github.io/2016/08/22/Redis-practice（一）基础篇/index.html">
+<meta property="og:site_name" content="professorLea">
+<meta property="og:description" content="引言
+先罗列一下缓存的基本概念。
+
+所有类型的缓存：
+
+L1 L2: CPU缓存（Cache Memory）是位于CPU与内存之间的临时存储器，它的容量比内存小的多但是交换速度却比内存要快得多
+DB cache(mysql query cache)
+Brower
+CDN
+Mobile image cache
+
+那些数据适合缓存：
+
+热点数据：top10，秒杀
+中间结果：比如哨兵的报警表达式触发次数">
+<meta property="og:updated_time" content="2016-10-17T07:18:39.180Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Redis practice（一）基础篇">
+<meta name="twitter:description" content="引言
+先罗列一下缓存的基本概念。
+
+所有类型的缓存：
+
+L1 L2: CPU缓存（Cache Memory）是位于CPU与内存之间的临时存储器，它的容量比内存小的多但是交换速度却比内存要快得多
+DB cache(mysql query cache)
+Brower
+CDN
+Mobile image cache
+
+那些数据适合缓存：
+
+热点数据：top10，秒杀
+中间结果：比如哨兵的报警表达式触发次数">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Pisces',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+  <title> Redis practice（一）基础篇 | professorLea </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">professorLea</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br />
+            
+            公益404
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                Redis practice（一）基础篇
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-08-22T13:42:33+08:00" content="2016-08-22">
+              2016-08-22
+            </time>
+          </span>
+
+          
+            <span class="post-category" >
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index">
+                    <span itemprop="name">Redis</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                &nbsp; | &nbsp;
+                <a href="/2016/08/22/Redis-practice（一）基础篇/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2016/08/22/Redis-practice（一）基础篇/" itemprop="commentsCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+
+          
+          
+             <span id="/2016/08/22/Redis-practice（一）基础篇/" class="leancloud_visitors" data-flag-title="Redis practice（一）基础篇">
+               &nbsp; | &nbsp;
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               <span class="post-meta-item-text">阅读次数 </span>
+               <span class="leancloud-visitors-count"></span>
+              </span>
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h4 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h4><blockquote>
+<p>先罗列一下缓存的基本概念。</p>
+</blockquote>
+<p><strong>所有类型的缓存：</strong></p>
+<ul>
+<li>L1 L2: CPU缓存（Cache Memory）是位于CPU与内存之间的临时存储器，它的容量比内存小的多但是交换速度却比内存要快得多</li>
+<li>DB cache(mysql query cache)</li>
+<li>Brower</li>
+<li>CDN</li>
+<li>Mobile image cache</li>
+</ul>
+<p><strong>那些数据适合缓存：</strong></p>
+<ul>
+<li>热点数据：top10，秒杀</li>
+<li>中间结果：比如哨兵的报警表达式触发次数，这次次数需要累计起来，存入数据库似乎没有意义</li>
+<li>预计算结果：计数、总量、max avg等统计结果。</li>
+</ul>
+<p><strong>常用的缓存框架</strong></p>
+<ul>
+<li>Ehcache: “JAVA’S MOST WIDELY-USED CACHE”，rmi协议支持jvm间数据同步问题</li>
+<li>Spring cache ：spring 给出的 缓存抽象，不是具体实现<br>这些都属于本地缓存，Ehcache可以满足JVM间数据同步的问题。具体实现可以用spring cache + echcache</li>
+</ul>
+<p><strong>常用的缓存数据库</strong></p>
+<ul>
+<li>Map，虽然听起来有点土，但是属于程序猿做本地缓存的一种办法</li>
+<li>Redis</li>
+<li>MemCached</li>
+</ul>
+<p>那么离不开这两者的比较：<br><strong>Redis vs MemCached</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">item</th>
+<th style="text-align:center">Redis</th>
+<th style="text-align:center">MemCached</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">高可用</td>
+<td style="text-align:center">支持</td>
+<td style="text-align:center">自己实现</td>
+</tr>
+<tr>
+<td style="text-align:center">持久化</td>
+<td style="text-align:center">支持</td>
+<td style="text-align:center">不支持</td>
+</tr>
+<tr>
+<td style="text-align:center">数据类型</td>
+<td style="text-align:center">5种类型</td>
+<td style="text-align:center">String类型</td>
+</tr>
+<tr>
+<td style="text-align:center">线程</td>
+<td style="text-align:center">单线程</td>
+<td style="text-align:center">多线程</td>
+</tr>
+<tr>
+<td style="text-align:center">事务</td>
+<td style="text-align:center">支持</td>
+<td style="text-align:center">使用CAS命令支持</td>
+</tr>
+</tbody>
+</table>
+<p>还有以下特点：</p>
+<ul>
+<li>Both fast enough</li>
+<li>Memcached is suitable for small and static data</li>
+<li>Redis is preferable for structured data</li>
+<li>Data can be persisted in Redis</li>
+<li>If only one can be choosed, Redis is a better choice ^_^</li>
+</ul>
+<p><strong>Redis属于缓存数据库</strong></p>
+<p><strong>应用</strong></p>
+<ul>
+<li>业务层缓存 (spring cache)</li>
+<li>持久层缓存 (Mybatis的二级缓存)</li>
+<li>数据层缓存  (eg:mysql query cache)</li>
+</ul>
+<p><strong>架构</strong></p>
+<ul>
+<li>本地缓存 Map Ehcache</li>
+<li>分布式缓存 JBossCache</li>
+<li>集中式缓存 memcached redis</li>
+</ul>
+<h4 id="Redis安装及配置文件，及启动"><a href="#Redis安装及配置文件，及启动" class="headerlink" title="Redis安装及配置文件，及启动"></a>Redis安装及配置文件，及启动</h4><p>安装的话就不用赘述了，从官方下一个tar包，比如<a href="http://download.redis.io/releases/redis-2.8.24.tar.gz" target="_blank" rel="external">http://download.redis.io/releases/redis-2.8.24.tar.gz</a><br>解压make，make install即可</p>
+<p><strong>Redis.conf</strong><br>基本配置</p>
+<ul>
+<li>pidfile 记录redis-server的pid文件路径</li>
+<li>port Redis-server的监听端口</li>
+<li>daemonize Redis-server配置成守护进程</li>
+<li>loglevel  Redis-server的日志级别（warning， notice，verbose，debug）</li>
+<li>logfile 日志文件路径</li>
+<li>requirepass 密码</li>
+<li>maxmemory  Redis能使用的最大内存量</li>
+<li>maxmemory-policy 内存用完后的置换策略<ul>
+<li>volatile-lru：设置了过期时间的key中，删除最近最少用的key</li>
+<li>allkeys-lru：所有的key中，删除最近最少用的key</li>
+<li>noeviction：不置换，直接返回OOM错误</li>
+<li>其他。</li>
+</ul>
+</li>
+<li>databases 与mysql类似，一个redis实例中可以分多个库<ul>
+<li>相同的库key是唯一的，不同的库key可以复用</li>
+<li>此配置项配置redis中库的个数</li>
+</ul>
+</li>
+</ul>
+<p>还有一些其他比如持久化和高可用的配置，另外一篇进阶篇会介绍。<br>更详细的文档，请参考官方：<a href="http://download.redis.io/redis-stable/redis.conf" target="_blank" rel="external">详细配置</a></p>
+<p>服务器端启动：<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">redis-server redis.conf</div></pre></td></tr></table></figure></p>
+<p>客户端访问：<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">redis-cli -h host -p port -a auth</div></pre></td></tr></table></figure></p>
+<h4 id="Redis常用数据类型"><a href="#Redis常用数据类型" class="headerlink" title="Redis常用数据类型"></a>Redis常用数据类型</h4><blockquote>
+<p>Tips: <a href="http://doc.redisfans.com" target="_blank" rel="external">命令大全</a>，<a href="http://try.redis.io/" target="_blank" rel="external">试用网站</a></p>
+</blockquote>
+<h5 id="String类型"><a href="#String类型" class="headerlink" title="String类型"></a>String类型</h5><p><strong>格式：</strong>“key” : “value”<br><strong>常用命令：</strong></p>
+<ul>
+<li>set key value</li>
+<li>get key</li>
+<li>del key</li>
+<li>incr/decr key</li>
+<li>setex key seconds value</li>
+</ul>
+<h5 id="List"><a href="#List" class="headerlink" title="List"></a>List</h5><p><strong>格式：</strong>类似于JAVA的List类型，”key”:[“value1”,”value2”]<br><strong>常用命令：</strong></p>
+<ul>
+<li>lpush key value1 value2 …</li>
+<li>lrange key start end</li>
+<li>lrem count value</li>
+<li>lindex key index</li>
+<li>llen key</li>
+</ul>
+<h5 id="Hash"><a href="#Hash" class="headerlink" title="Hash"></a>Hash</h5><p><strong>格式：</strong>类似于Java中的Map类型，”key”:{“field1”:”value1”, “field2”:value2,…}<br><strong>常用命令：</strong></p>
+<ul>
+<li>hset key field value</li>
+<li>hget key field</li>
+<li>hdel key field1 field2…</li>
+<li>hkeys key</li>
+<li>hvals key</li>
+</ul>
+<h5 id="Set"><a href="#Set" class="headerlink" title="Set"></a>Set</h5><p><strong>格式：</strong>类似于Java中的set类型。”key”:{“member1”,”member2”,…}<br><strong>常用命令：</strong></p>
+<ul>
+<li>sadd key member1 member2 …</li>
+<li>srem key member1 member2 …</li>
+<li>smembers</li>
+<li>scard key</li>
+<li>sinter key1 key2</li>
+<li>sunion key1 key2</li>
+</ul>
+<h5 id="Sorted-Set"><a href="#Sorted-Set" class="headerlink" title="Sorted Set"></a>Sorted Set</h5><p><strong>格式：</strong> “key”: {(“score1”,”memeber1”, (“score2”,”memeber2”)…)<br><strong>常用命令：</strong></p>
+<ul>
+<li>zadd key score member</li>
+<li>zrem key member</li>
+<li>zrangebyscore key min max (withscores)</li>
+<li>zcard key</li>
+</ul>
+<h5 id="其他常用命令"><a href="#其他常用命令" class="headerlink" title="其他常用命令"></a>其他常用命令</h5><ul>
+<li><strong>Keys + 匹配条件:</strong>  keys * ： 返回所有key</li>
+<li><strong>expire key seconds:</strong>  设置key的过期时间</li>
+<li><strong>ttl key:</strong>  查询key的过期时间</li>
+<li><strong>type key:</strong> 查询key的类型</li>
+<li><strong>exists key:</strong> 检查key是否存在</li>
+<li><strong>Publish/subcribe:</strong><ul>
+<li>发布一个推送频道以及订阅一个推送频道</li>
+<li>推送端和接收端均连上同一个redis</li>
+<li>Subscribe + channel1 + channel2</li>
+<li>Publish channel1 “hello world”</li>
+<li>类似于MQ</li>
+</ul>
+</li>
+<li>Multi/exec/discard<ul>
+<li>事务</li>
+<li>要么全成功，要么全回滚</li>
+</ul>
+</li>
+</ul>
+<h4 id="常用的客户端"><a href="#常用的客户端" class="headerlink" title="常用的客户端"></a>常用的客户端</h4><h5 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h5><p>Redis-cli：安装后自带</p>
+<h5 id="Windows"><a href="#Windows" class="headerlink" title="Windows"></a>Windows</h5><p><a href="https://redisdesktop.com/" target="_blank" rel="external">Redis destop manger</a></p>
+<h4 id="支持的编程语言"><a href="#支持的编程语言" class="headerlink" title="支持的编程语言"></a>支持的编程语言</h4><h5 id="JAVA"><a href="#JAVA" class="headerlink" title="JAVA"></a>JAVA</h5><p><strong>Jedis</strong><br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SharedJedisTest</span> </span>&#123;</div><div class="line">    <span class="keyword">public</span>  <span class="keyword">static</span> JedisPoolConfig poolConfig = <span class="keyword">new</span> JedisPoolConfig();</div><div class="line">    <span class="keyword">public</span>  <span class="keyword">static</span> List&lt;JedisShardInfo&gt; shards = <span class="keyword">new</span> ArrayList&lt;JedisShardInfo&gt;();</div><div class="line">    <span class="keyword">static</span> &#123;</div><div class="line">        poolConfig.setMaxTotal(<span class="number">100</span>);</div><div class="line">        poolConfig.setMaxIdle(<span class="number">10</span>);</div><div class="line">        poolConfig.setMaxWaitMillis(<span class="number">2000</span>);</div><div class="line">        JedisShardInfo info1 = <span class="keyword">new</span> JedisShardInfo(<span class="string">"10.165.124.10"</span>,<span class="number">16379</span>);</div><div class="line">        info1.setPassword(<span class="string">"123456"</span>);</div><div class="line">        JedisShardInfo info2 = <span class="keyword">new</span> JedisShardInfo(<span class="string">"10.165.124.10"</span>,<span class="number">16381</span>);</div><div class="line">        info2.setPassword(<span class="string">"123456"</span>);</div><div class="line">        shards.add(info1);</div><div class="line">        shards.add(info2);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> ShardedJedisPool shardedJedisPool = <span class="keyword">new</span> ShardedJedisPool(poolConfig,shards);</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</div><div class="line">        ShardedJedis jedis = <span class="keyword">null</span>;</div><div class="line">        <span class="keyword">try</span> &#123;</div><div class="line">            jedis = shardedJedisPool.getResource();</div><div class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i =<span class="number">0</span>; i&lt;<span class="number">50</span>; i++)&#123;</div><div class="line">                String key = String.format(<span class="string">"key%d"</span>,i);</div><div class="line">                String value = String.format(<span class="string">"value%d"</span>,i);</div><div class="line">                jedis.set(key, value);</div><div class="line">                Client client1= jedis.getShard(key).getClient();</div><div class="line">                System.out.println(String.format((<span class="string">"%s in server: %s, and port is: %d"</span>),key,client1.getHost(),client1.getPort()));</div><div class="line">            &#125;</div><div class="line">        &#125;<span class="keyword">finally</span> &#123;</div><div class="line">            <span class="keyword">if</span> (jedis != <span class="keyword">null</span>)&#123;</div><div class="line">                jedis.close();</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h5 id="Python"><a href="#Python" class="headerlink" title="Python"></a>Python</h5><p><strong>pip install redis</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> redis</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">addString</span><span class="params">()</span>:</span></div><div class="line">    redis_cli.set(<span class="string">'string'</span>, <span class="string">'value1'</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.get(<span class="string">'string'</span>)</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">addList</span><span class="params">()</span>:</span></div><div class="line">    redis_cli.lpush(<span class="string">'list'</span>, <span class="string">'value1'</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.lrange(<span class="string">'list'</span>, <span class="number">0</span>, <span class="number">-1</span>)</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">addHash</span><span class="params">()</span>:</span></div><div class="line">    redis_cli.hmset(<span class="string">'hash'</span>, &#123;<span class="string">'field1'</span>: <span class="string">'value1'</span>, <span class="string">'field2'</span>: <span class="string">'value2'</span>, <span class="string">'field3'</span>: <span class="string">'value3'</span>&#125;)</div><div class="line">    <span class="keyword">print</span> redis_cli.hmget(<span class="string">'hash'</span>, <span class="string">'field1'</span>, <span class="string">'field3'</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.hkeys(<span class="string">'hash'</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.hvals(<span class="string">'hash'</span>)</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">addSet</span><span class="params">()</span>:</span></div><div class="line">    redis_cli.sadd(<span class="string">'set'</span>, &#123;<span class="string">'member1'</span>: <span class="string">'value1'</span>, <span class="string">'member2'</span>: <span class="string">'value2'</span>, <span class="string">'member3'</span>: <span class="string">'value3'</span>&#125;)</div><div class="line">    redis_cli.sadd(<span class="string">'set'</span>, <span class="string">'member4'</span>, <span class="string">'member5'</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.smembers(<span class="string">'set'</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.scard(<span class="string">'set'</span>)</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">addSortedSet</span><span class="params">()</span>:</span></div><div class="line">    redis_cli.zadd(<span class="string">'SortedSet'</span>, memeber1=<span class="number">100</span>, memeber2=<span class="number">80</span>, memeber3=<span class="number">60</span>, memeber4=<span class="number">30</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.zcount(<span class="string">'SortedSet'</span>, min=<span class="number">20</span>, max=<span class="number">90</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.zrangebyscore(<span class="string">'SortedSet'</span>, min=<span class="number">0</span>, max=<span class="number">90</span>)</div><div class="line"></div><div class="line"></div><div class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</div><div class="line">    redis_cli = redis.Redis(host=<span class="string">'10.165.124.10'</span>, port=<span class="number">16379</span>, db=<span class="number">0</span>, password=<span class="string">'123456'</span>)</div><div class="line">    redis_cli_db1 = redis.Redis(host=<span class="string">'10.165.124.10'</span>, port=<span class="number">16379</span>, db=<span class="number">1</span>, password=<span class="string">'123456'</span>)</div><div class="line"></div><div class="line">    <span class="comment"># base opeartion for String List Set Hash SortedSet</span></div><div class="line">    <span class="comment"># addString()</span></div><div class="line">    <span class="comment"># addList()</span></div><div class="line">    <span class="comment"># addHash()</span></div><div class="line">    <span class="comment"># addSet()</span></div><div class="line">    <span class="comment"># addSortedSet()</span></div><div class="line"></div><div class="line">    <span class="comment"># use pipeline 大量写入</span></div><div class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">13000</span>, <span class="number">13050</span>):</div><div class="line">        string_key = <span class="string">'stringkey'</span> + str(i)</div><div class="line">        list_key = <span class="string">'listkey'</span> + str(i)</div><div class="line">        set_key = <span class="string">'setkey'</span> + str(i)</div><div class="line">        hash_key = <span class="string">'hashey'</span> + str(i)</div><div class="line">        z_key = <span class="string">'zkey'</span> + str(i)</div><div class="line"></div><div class="line">        <span class="keyword">print</span> <span class="string">"========= add keys starts ========"</span></div><div class="line"></div><div class="line">        redis_cli_db1.set(string_key, <span class="string">'string value1'</span>)</div><div class="line">        <span class="keyword">print</span> (<span class="string">"add string key %s, value %s"</span>, string_key, redis_cli_db1.get(string_key))</div><div class="line"></div><div class="line">        redis_cli_db1.rpush(list_key, <span class="string">'list value1'</span>,<span class="string">'list value2'</span>, <span class="string">'list value3'</span>)</div><div class="line">        <span class="keyword">print</span> (<span class="string">"add list key %s, value %s"</span>, list_key, redis_cli_db1.lrange(list_key, start=<span class="number">0</span>, end=<span class="number">-1</span>))</div><div class="line"></div><div class="line">        redis_cli_db1.sadd(set_key, <span class="string">'member1'</span>, <span class="string">'member2'</span>, &#123;<span class="string">'member1'</span>: <span class="string">'value1'</span>, <span class="string">'member3'</span>: <span class="string">'value3'</span>&#125;)</div><div class="line">        print(<span class="string">"add set key %s, value %s"</span>, set_key, redis_cli_db1.smembers(set_key))</div><div class="line"></div><div class="line">        redis_cli_db1.hmset(hash_key, &#123;<span class="string">'field1'</span>: <span class="string">'value1'</span>, <span class="string">'field2'</span>: <span class="string">'value2'</span>, <span class="string">'field3'</span>: <span class="string">'value3'</span>&#125;)</div><div class="line">        print(<span class="string">"add hash key %s, keys = %s values = %s"</span>, \</div><div class="line">              hash_key, redis_cli_db1.hkeys(hash_key), redis_cli_db1.hvals(hash_key))</div><div class="line"></div><div class="line">        redis_cli_db1.zadd(z_key, memeber1=<span class="number">100</span>, memeber2=<span class="number">80</span>, memeber3=<span class="number">60</span>, memeber4=<span class="number">30</span>)</div><div class="line">        print(<span class="string">"add sorted key %s, keys = %s values = %s"</span>, \</div><div class="line">              z_key, redis_cli_db1.zremrangebyscore(z_key, min=<span class="number">0</span>, max=<span class="number">90</span>))</div></pre></td></tr></table></figure>
+<h4 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h4><ul>
+<li><strong>Ruby：</strong>Redis-rb</li>
+<li><strong>PHP:</strong> phpredis</li>
+<li><strong>C++:</strong>hiredis.h</li>
+</ul>
+<h4 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h4><ul>
+<li><strong><a href="http://redis.io/" target="_blank" rel="external">Redis官网</a></strong></li>
+<li><strong><a href="http://doc.redisfans.com/index.html" target="_blank" rel="external">命令大全</a></strong></li>
+<li><strong><a href="https://github.com/antirez/redis/issues" target="_blank" rel="external">Github讨论区</a></strong></li>
+<li><strong>书籍：</strong> <em>Redis in Action</em></li>
+</ul>
+
+      
+    </div>
+
+    <div>
+      
+        
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Redis/" rel="tag">#Redis</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/08/12/Think-as-developer-从深入理解业务实现框架开始/" rel="next" title="Think as developer,从深入理解业务实现框架开始">
+                <i class="fa fa-chevron-left"></i> Think as developer,从深入理解业务实现框架开始
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/08/22/Redis-practise（二）使用Docker部署Redis高可用，分布式集群/" rel="prev" title="Redis practise（二）使用Docker部署Redis高可用，分布式集群">
+                Redis practise（二）使用Docker部署Redis高可用，分布式集群 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div class="ds-thread" data-thread-key="2016/08/22/Redis-practice（一）基础篇/"
+           data-title="Redis practice（一）基础篇" data-url="https://professorlea.github.io/2016/08/22/Redis-practice（一）基础篇/">
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="https://avatars2.githubusercontent.com/u/20817319?v=3&s=460"
+               alt="professorLea" />
+          <p class="site-author-name" itemprop="name">professorLea</p>
+          <p class="site-description motion-element" itemprop="description">professorLea的博客</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">8</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">7</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/professorLea" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/lixiaolei0318" target="_blank" title="微博">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  微博
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#引言"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis安装及配置文件，及启动"><span class="nav-number">2.</span> <span class="nav-text">Redis安装及配置文件，及启动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis常用数据类型"><span class="nav-number">3.</span> <span class="nav-text">Redis常用数据类型</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#String类型"><span class="nav-number">3.1.</span> <span class="nav-text">String类型</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#List"><span class="nav-number">3.2.</span> <span class="nav-text">List</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Hash"><span class="nav-number">3.3.</span> <span class="nav-text">Hash</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Set"><span class="nav-number">3.4.</span> <span class="nav-text">Set</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Sorted-Set"><span class="nav-number">3.5.</span> <span class="nav-text">Sorted Set</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#其他常用命令"><span class="nav-number">3.6.</span> <span class="nav-text">其他常用命令</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#常用的客户端"><span class="nav-number">4.</span> <span class="nav-text">常用的客户端</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Linux"><span class="nav-number">4.1.</span> <span class="nav-text">Linux</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Windows"><span class="nav-number">4.2.</span> <span class="nav-text">Windows</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#支持的编程语言"><span class="nav-number">5.</span> <span class="nav-text">支持的编程语言</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#JAVA"><span class="nav-number">5.1.</span> <span class="nav-text">JAVA</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Python"><span class="nav-number">5.2.</span> <span class="nav-text">Python</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#其他"><span class="nav-number">6.</span> <span class="nav-text">其他</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Reference"><span class="nav-number">7.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">professorLea</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Pisces
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.0.1"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"professorLea"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+  
+
+
+
+
+
+  
+  
+  
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("xcCHElA4ynn0NVHyERvTJsmA-gzGzoHsz", "V7WiJiTAjY9JcaV8Ihp2CIF1");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+</body>
+</html>

@@ -1,0 +1,864 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="测试思维,java," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1" />
+
+
+
+
+
+
+<meta name="description" content="如果想钓鱼，那么就像想鱼一样思考。那么问题来了，你有鱼鳍来游泳吗？
+首先，产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的测试流程之外，我们需要想一些新的办法。其次，测试的起点是明确测试的需求，然而有些很具体的问题，需要帮助开发定位问题，需求只定义了一些比较粗的业务目标，然而具体实现由开">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Think as developer,从深入理解业务实现框架开始">
+<meta property="og:url" content="https://professorlea.github.io/2016/08/12/Think-as-developer-从深入理解业务实现框架开始/index.html">
+<meta property="og:site_name" content="professorLea">
+<meta property="og:description" content="如果想钓鱼，那么就像想鱼一样思考。那么问题来了，你有鱼鳍来游泳吗？
+首先，产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的测试流程之外，我们需要想一些新的办法。其次，测试的起点是明确测试的需求，然而有些很具体的问题，需要帮助开发定位问题，需求只定义了一些比较粗的业务目标，然而具体实现由开">
+<meta property="og:image" content="https://professorlea.github.io/1.png">
+<meta property="og:image" content="https://professorlea.github.io/2.png">
+<meta property="og:image" content="https://professorlea.github.io/3.png">
+<meta property="og:image" content="https://professorlea.github.io/4.png">
+<meta property="og:updated_time" content="2016-10-17T07:27:58.313Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Think as developer,从深入理解业务实现框架开始">
+<meta name="twitter:description" content="如果想钓鱼，那么就像想鱼一样思考。那么问题来了，你有鱼鳍来游泳吗？
+首先，产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的测试流程之外，我们需要想一些新的办法。其次，测试的起点是明确测试的需求，然而有些很具体的问题，需要帮助开发定位问题，需求只定义了一些比较粗的业务目标，然而具体实现由开">
+<meta name="twitter:image" content="https://professorlea.github.io/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Pisces',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+  <title> Think as developer,从深入理解业务实现框架开始 | professorLea </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">professorLea</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br />
+            
+            公益404
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                Think as developer,从深入理解业务实现框架开始
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-08-12T11:30:47+08:00" content="2016-08-12">
+              2016-08-12
+            </time>
+          </span>
+
+          
+            <span class="post-category" >
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                  <a href="/categories/测试/" itemprop="url" rel="index">
+                    <span itemprop="name">测试</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                &nbsp; | &nbsp;
+                <a href="/2016/08/12/Think-as-developer-从深入理解业务实现框架开始/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2016/08/12/Think-as-developer-从深入理解业务实现框架开始/" itemprop="commentsCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+
+          
+          
+             <span id="/2016/08/12/Think-as-developer-从深入理解业务实现框架开始/" class="leancloud_visitors" data-flag-title="Think as developer,从深入理解业务实现框架开始">
+               &nbsp; | &nbsp;
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               <span class="post-meta-item-text">阅读次数 </span>
+               <span class="leancloud-visitors-count"></span>
+              </span>
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>如果想钓鱼，那么就像想鱼一样思考。那么问题来了，你有鱼鳍来游泳吗？</p>
+<p>首先，产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的测试流程之外，我们需要想一些新的办法。其次，测试的起点是明确测试的需求，然而有些很具体的问题，需要帮助开发定位问题，需求只定义了一些比较粗的业务目标，然而具体实现由开发掌握。那么这里的衔接过程，QA是袖手旁观呢，还是参与其中。个人认为后者可能可以更深入的接近实现，达到最大化的质量保障。 那么从阅读业务实现框架开始吧。</p>
+<p>鉴于目前接触到的大多PC端的项目，大多是war包形式走的tomcat。所以这篇文章主要是面向这类产品的一些阅读方法和技巧总结进行的一些实践活动。</p>
+<p><strong>源自</strong></p>
+<ul>
+<li>某运维监控系统Web API Task模块源码阅读</li>
+<li>某智能语音项目JAVA层源码阅读</li>
+</ul>
+<p><strong>Get到那些点</strong></p>
+<ul>
+<li>一个web项目的容器启动的入口是什么</li>
+<li>深入Spring MVC + Mybatis的一些成熟的工程架构如何配置</li>
+<li>Spring 和SpringMVC是两件事</li>
+</ul>
+<p><strong>QA如何得益于此</strong></p>
+<ul>
+<li>请跳转至最后 <a href="http://localhost:4000/2016/08/12/Think-as-developer-%E4%BB%8E%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E4%B8%9A%E5%8A%A1%E5%AE%9E%E7%8E%B0%E6%A1%86%E6%9E%B6%E5%BC%80%E5%A7%8B/#结语" target="_blank" rel="external">总结</a></li>
+</ul>
+<h4 id="读了那些"><a href="#读了那些" class="headerlink" title="读了那些"></a>读了那些</h4><h5 id="一个web项目的容器启动的入口是什么"><a href="#一个web项目的容器启动的入口是什么" class="headerlink" title="一个web项目的容器启动的入口是什么"></a>一个web项目的容器启动的入口是什么</h5><p>记得最早的时候开始研究JAVA WEB的时候，记得看到一个人写的一句话：<br>“初学 Java Web 开发，请远离各种框架，从 Servlet 开发” </p>
+<blockquote>
+<p><a href="http://www.oschina.net/question/12_52027" target="_blank" rel="external">初学 Java Web 开发，请远离各种框架，从 Servlet 开发</a></p>
+</blockquote>
+<p>Java web开发离不开servlet，servlet的生命周期是有Tomcat/jetty这样的web容器接管，那么web.xml就是所有开始的入口。这里会配置servlet，filter这样的组件。</p>
+<p><strong>servlet</strong>：通过doGet doPost方法处理请求，这个方法里有传统的两个入参：HttpServletRequest，HttpServletResponse来分别处理请求和响应。</p>
+<p><strong>filter</strong>：在请求被容器发到servlet之前，会先经过配置的filter。所以一般情况下，filter都是做一些<em>白名单验证</em>，<em>特定的uri要通过openid</em>，doFilter方法在做。<br>这个时候web.xml里应该会有很多<code>&lt;servlet&gt;</code>和<code>&lt;filter&gt;</code>标签，杂乱无章</p>
+<p>加入的springMVC框架后，web.xml就变得简化无比（只是web.xml），需要关注的有下面这些：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;context-param&gt;</div><div class="line">    &lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;</div><div class="line">    &lt;param-value&gt;</div><div class="line">    classpath:spring-context-web.xml</div><div class="line">&lt;/param-value&gt;</div><div class="line">&lt;/context-param&gt;</div><div class="line"></div><div class="line">&lt;listener&gt;</div><div class="line">    &lt;listener-class&gt;org.springframework.web.context.ContextLoaderListener&lt;/listener-class&gt;</div><div class="line">&lt;/listener&gt;</div></pre></td></tr></table></figure>
+<p>以及servlet的配置：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;servlet&gt;</div><div class="line">    &lt;servlet-name&gt;sentry&lt;/servlet-name&gt;</div><div class="line">    &lt;servlet-class&gt;org.springframework.web.servlet.DispatcherServlet&lt;/servlet-class&gt;</div><div class="line">    &lt;init-param&gt;</div><div class="line">        &lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;</div><div class="line">        &lt;param-value&gt;classpath:spring-mvc-config.xml&lt;/param-value&gt;</div><div class="line">    &lt;/init-param&gt;</div><div class="line">    &lt;load-on-startup&gt;1&lt;/load-on-startup&gt;</div><div class="line">&lt;/servlet&gt;</div></pre></td></tr></table></figure>
+<p>又出来了两个配置文件：<strong>spring-context-web.xml</strong> &amp; <strong>spring-mvc-config.xml</strong><br>一个是通用上下文，一个是初始化ＭＶＣ上下文。如下图<br> <img src="1.png" alt="Alt pic"> </p>
+<p>那么各有什么用处：</p>
+<ul>
+<li>ContextLoaderListener初始化的上下文加载的Bean是对于整个应用程序共享的，不管是使用什么表现层技术，一般如DAO层、Service层Bean；</li>
+<li>DispatcherServlet初始化的上下文加载的Bean是只对Spring Web MVC有效的Bean，如Controller、HandlerMapping、HandlerAdapter等等，该初始化上下文应该只加载Web相关组件。</li>
+</ul>
+<p>这里就可以大致知道，之前所有<code>&lt;servlet&gt;</code>需要做的事情，都被spring的Dispatcher servlet统一接管，可以理解为一个虚拟的路由器，将请求转发给所有的@Controller</p>
+<p>这里碰见过一个事情：我有个外部的服务需要初始化，初始化如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;bean id="qaService" class="com.xxx.utils.qa.qaServiceImpl"&gt;</div><div class="line">    &lt;constructor-arg index="0" value="$&#123;baseURL&#125;" /&gt;</div><div class="line">    &lt;constructor-arg index="1" value="$&#123;token&#125;" /&gt;</div><div class="line">&lt;/bean&gt;</div></pre></td></tr></table></figure>
+<p>我用它的地方是在一个controller里面，然而放在spring-mvc-config.xml就编译失败，说找不到这个bean。放在spring-context-web.xml就可以。这里就延伸出来另外一个话题 <strong>spring和springMVC是两件事</strong>。</p>
+<h4 id="深入理解Spring-MVC-Mybatis的一些成熟的工程架构如何配置"><a href="#深入理解Spring-MVC-Mybatis的一些成熟的工程架构如何配置" class="headerlink" title="深入理解Spring MVC + Mybatis的一些成熟的工程架构如何配置"></a>深入理解Spring MVC + Mybatis的一些成熟的工程架构如何配置</h4><p>你的项目目录应该是这样的：</p>
+<ul>
+<li><p><strong>/main/</strong>：<br>Controller层，Service层及DAO层，以及filter：<br><img src="2.png" alt="Alt pic"> </p>
+</li>
+<li><p><strong>/Resources</strong>：<br>使用MyBatis的话，这些mapper文件放在这里，并使用和DAO层一样的package。<br>然后根据不同的开发，测试，线上环境放入不同的配置文件。<br><img src="3.png" alt="Alt pic"> </p>
+</li>
+</ul>
+<p>至于配置文件如何读取，一方面Maven编译打包的时候resource目录下的文件都会copy出来。另外一方面，区分环境变量，在pom,xml的<code>&lt;profile&gt;</code>配置即可，然后通过mvn的 -P参数来区分（这里在OMAD里，其实是通过ant copy覆盖的操作来进行），如图：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">&lt;profile&gt;</div><div class="line">    &lt;id&gt;dev&lt;/id&gt;</div><div class="line">    &lt;activation&gt;</div><div class="line">        &lt;activeByDefault&gt;true&lt;/activeByDefault&gt;</div><div class="line">    &lt;/activation&gt;</div><div class="line">    &lt;build&gt;</div><div class="line">        &lt;resources&gt;</div><div class="line">            &lt;resource&gt;</div><div class="line">                &lt;directory&gt;src/main/resources/dev&lt;/directory&gt;</div><div class="line">            &lt;/resource&gt;</div><div class="line">            &lt;resource&gt;</div><div class="line">                &lt;directory&gt;src/main/resources/common&lt;/directory&gt;</div><div class="line">            &lt;/resource&gt;</div><div class="line">        &lt;/resources&gt;</div><div class="line">    &lt;/build&gt;</div><div class="line">&lt;/profile&gt;</div><div class="line">&lt;profile&gt;</div><div class="line">    &lt;id&gt;test&lt;/id&gt;</div><div class="line">    /* 同上 */</div><div class="line">    &lt;directory&gt;src/main/resources/test&lt;/directory&gt;</div><div class="line">&lt;/profile&gt;</div><div class="line">&lt;profile&gt;</div><div class="line">    &lt;id&gt;online&lt;/id&gt;</div><div class="line">    ...</div><div class="line">    &lt;directory&gt;src/main/resources/online&lt;/directory&gt;</div><div class="line">    ...</div><div class="line">    /* 同上 */</div><div class="line">&lt;/profile&gt;</div></pre></td></tr></table></figure>
+<ul>
+<li><strong>请求如何到达Controller</strong></li>
+</ul>
+<p>这里有个关键注释：<code>&lt;mvc:annotation-driven/&gt;</code><br>因为之前肯定是通过<code>&lt;context:component-scan/&gt;</code>扫描过所有的Controller，但是他们只是bean被构造，需要通过<code>&lt;mvc:annotation-driven/&gt;</code>标签告诉springMVC，请求的处理者。</p>
+<blockquote>
+<p>出处：<a href="http://stackoverflow.com/questions/13661985/spring-mvc-difference-between-contextcomponent-scan-and-annotation-driven" target="_blank" rel="external">spring-mvc-difference-between-contextcomponent-scan-and-annotation-driven</a></p>
+</blockquote>
+<ul>
+<li><strong>请求返回</strong>：FTL返回及JSON返回</li>
+</ul>
+<p>这里要在spring_mvc_config.xml中配置一个bean：ContentNegotiatingViewResolver，有两个属性：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;property name=<span class="string">"defaultContentType"</span> value=<span class="string">"application/json"</span> /&gt;</div><div class="line">.....</div><div class="line">&lt;property name=<span class="string">"viewResolvers"</span>&gt;</div><div class="line">.....</div><div class="line">&lt;property name=<span class="string">"defaultViews"</span>&gt;</div></pre></td></tr></table></figure>
+<p>这两个resolver的好处在于：Controller的函数处理，返回String就默认是FTL的路径（也就是前端的路径），返回void，就是json。不需要@RequestBody注解。</p>
+<ul>
+<li><strong>Controller 怎么看，怎么写</strong></li>
+</ul>
+<p>了解一些关键注释的意思，比如<code>@RequestMapping</code>， <code>@RequestParam</code>,  <code>@RequestHeader</code> ，<code>@PathVariable</code>， 至于<code>ResponseBody</code>，经过上面的讲解，应该就不需用了。别的话，多看代码，多实践，不缺这样的资料。</p>
+<ul>
+<li><strong>前端的配置</strong></li>
+</ul>
+<p>两个关键配置：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;mvc:resources mapping=<span class="string">"/views/**"</span> location=<span class="string">"/views/"</span>/&gt;`</div><div class="line">&lt;bean</div><div class="line">            <span class="class"><span class="keyword">class</span></span>=<span class="string">"org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer"</span>&gt;</div><div class="line">        &lt;property name=<span class="string">"templateLoaderPath"</span> value=<span class="string">"/views"</span>/&gt;`</div></pre></td></tr></table></figure>
+<p>因为Servlet被Spring整体接管之后，所有的请求都被接管。那么静态文件呢？他们又没有Controller的处理，肯定会404 not found。</p>
+<ul>
+<li>第一个注释就是解决了这个问题，配置了静态文件的本地路径<code>/views/</code>，这里根目录是webapp， 那么所有的CSS,JS, PNG, 都将在来这里找。</li>
+<li>第二个注释其实就是配置frerMarker的模版路径，一般工程也都放在webapp的<code>/views/</code>下。</li>
+</ul>
+<h4 id="spring和springMVC是两件事。"><a href="#spring和springMVC是两件事。" class="headerlink" title="spring和springMVC是两件事。"></a>spring和springMVC是两件事。</h4><p>这里碰见过一个事情：我有个外部的服务需要初始化，初始化如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;bean id="qaService" class="com.xxx.utils.qa.qaServiceImpl"&gt;</div><div class="line">    &lt;constructor-arg index="0" value="$&#123;baseURL&#125;" /&gt;</div><div class="line">    &lt;constructor-arg index="1" value="$&#123;token&#125;" /&gt;</div><div class="line">&lt;/bean&gt;</div></pre></td></tr></table></figure>
+<p>我用它的地方是在一个controller里面，然而放在spring-mvc-config.xml就编译失败，说找不到这个bean。具体为啥，可以参考上一节。因为这些bean并不是有Spring MVC通过@Service标签来统一注入管理。那么它的初始化过程应该要放入spring-context-web.xml，在spring mvc介入之间就需要实例化。否则当然只是一个接口。 </p>
+<h4 id="得到什么"><a href="#得到什么" class="headerlink" title="得到什么"></a>得到什么</h4><ul>
+<li>在我新take的一个某智能语音机器人项目中，在没有任何需求设计接口文档的情况下，要开展测试工作，只能先从源码开始，之前的经验帮助了我，理清楚了所有接口的处理逻辑（毕竟是半路接手项目，只能先解决问题为先）。基本上一两天功夫就可以把源码读懂。当时的几个思维导图之一如下：<br><img src="4.png" alt="Alt pic"> </li>
+</ul>
+<p>后面就是欢快的写接口用例case了。</p>
+<ul>
+<li>略深入理解spring及springMVC</li>
+<li>找到快速融入团队的切入点。</li>
+<li>能够迅速定位问题。</li>
+<li>QA不仅仅要整体业务上有宏观把控。出现微观上bug，也能做出root cause的前瞻分析。</li>
+</ul>
+<h4 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h4><p>白盒与黑盒不是测试手段，而是测试思维。<br>过度关注开发细节的白盒测试没有意义，从需求出发更加的符合实际中的测试。</p>
+<blockquote>
+<p>引自 <a href="http://mp.weixin.qq.com/s?__biz=MzI2MjEwMDE2OQ==&amp;mid=2648586125&amp;idx=1&amp;sn=e5416afcc83a23b485d6d3b75da41b7e&amp;scene=1&amp;srcid=0521DV7YsyaaWND9LrEuHeYF#rd" target="_blank" rel="external">链接</a></p>
+</blockquote>
+<p><strong>业务理解第一，业务理解第一，业务理解第一。</strong></p>
+
+      
+    </div>
+
+    <div>
+      
+        
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/测试思维/" rel="tag">#测试思维</a>
+          
+            <a href="/tags/java/" rel="tag">#java</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/08/12/基于Spring-MVC和Mybatis的接口测试框架实现/" rel="next" title="基于Spring MVC和Mybatis的接口测试框架实现">
+                <i class="fa fa-chevron-left"></i> 基于Spring MVC和Mybatis的接口测试框架实现
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/08/22/Redis-practice（一）基础篇/" rel="prev" title="Redis practice（一）基础篇">
+                Redis practice（一）基础篇 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div class="ds-thread" data-thread-key="2016/08/12/Think-as-developer-从深入理解业务实现框架开始/"
+           data-title="Think as developer,从深入理解业务实现框架开始" data-url="https://professorlea.github.io/2016/08/12/Think-as-developer-从深入理解业务实现框架开始/">
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="https://avatars2.githubusercontent.com/u/20817319?v=3&s=460"
+               alt="professorLea" />
+          <p class="site-author-name" itemprop="name">professorLea</p>
+          <p class="site-description motion-element" itemprop="description">professorLea的博客</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">8</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">7</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/professorLea" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/lixiaolei0318" target="_blank" title="微博">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  微博
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#读了那些"><span class="nav-number">1.</span> <span class="nav-text">读了那些</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#一个web项目的容器启动的入口是什么"><span class="nav-number">1.1.</span> <span class="nav-text">一个web项目的容器启动的入口是什么</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#深入理解Spring-MVC-Mybatis的一些成熟的工程架构如何配置"><span class="nav-number">2.</span> <span class="nav-text">深入理解Spring MVC + Mybatis的一些成熟的工程架构如何配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#spring和springMVC是两件事。"><span class="nav-number">3.</span> <span class="nav-text">spring和springMVC是两件事。</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#得到什么"><span class="nav-number">4.</span> <span class="nav-text">得到什么</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#结语"><span class="nav-number">5.</span> <span class="nav-text">结语</span></a></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">professorLea</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Pisces
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.0.1"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"professorLea"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+  
+
+
+
+
+
+  
+  
+  
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("xcCHElA4ynn0NVHyERvTJsmA-gzGzoHsz", "V7WiJiTAjY9JcaV8Ihp2CIF1");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+</body>
+</html>

@@ -1,0 +1,799 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="UITest," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1" />
+
+
+
+
+
+
+<meta name="description" content="环境搭建Xvfb介绍
+Xvfb is an X server that can run on machines with no display hardware and no physical input devices. It emulates a dumb framebuffer using virtual memory.https://www.x.org/archive/X11R7.6/do">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Do WEBUI on Linux">
+<meta property="og:url" content="https://professorlea.github.io/2016/08/10/Do-WEBUI-on-Linux/index.html">
+<meta property="og:site_name" content="professorLea">
+<meta property="og:description" content="环境搭建Xvfb介绍
+Xvfb is an X server that can run on machines with no display hardware and no physical input devices. It emulates a dumb framebuffer using virtual memory.https://www.x.org/archive/X11R7.6/do">
+<meta property="og:image" content="https://professorlea.github.io/viewer.png">
+<meta property="og:image" content="https://professorlea.github.io/CI.png">
+<meta property="og:updated_time" content="2016-10-17T07:27:58.301Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Do WEBUI on Linux">
+<meta name="twitter:description" content="环境搭建Xvfb介绍
+Xvfb is an X server that can run on machines with no display hardware and no physical input devices. It emulates a dumb framebuffer using virtual memory.https://www.x.org/archive/X11R7.6/do">
+<meta name="twitter:image" content="https://professorlea.github.io/viewer.png">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Pisces',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+  <title> Do WEBUI on Linux | professorLea </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">professorLea</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br />
+            
+            公益404
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                Do WEBUI on Linux
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-08-10T16:17:40+08:00" content="2016-08-10">
+              2016-08-10
+            </time>
+          </span>
+
+          
+            <span class="post-category" >
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                  <a href="/categories/测试/" itemprop="url" rel="index">
+                    <span itemprop="name">测试</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                &nbsp; | &nbsp;
+                <a href="/2016/08/10/Do-WEBUI-on-Linux/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2016/08/10/Do-WEBUI-on-Linux/" itemprop="commentsCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+
+          
+          
+             <span id="/2016/08/10/Do-WEBUI-on-Linux/" class="leancloud_visitors" data-flag-title="Do WEBUI on Linux">
+               &nbsp; | &nbsp;
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               <span class="post-meta-item-text">阅读次数 </span>
+               <span class="leancloud-visitors-count"></span>
+              </span>
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h4 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h4><h5 id="Xvfb介绍"><a href="#Xvfb介绍" class="headerlink" title="Xvfb介绍"></a>Xvfb介绍</h5><blockquote>
+<p>Xvfb is an X server that can run on machines with no display hardware and no physical input devices. It emulates a dumb framebuffer using virtual memory.<br><a href="https://www.x.org/archive/X11R7.6/doc/man/man1/Xvfb.1.xhtml" target="_blank" rel="external">https://www.x.org/archive/X11R7.6/doc/man/man1/Xvfb.1.xhtml</a></p>
+</blockquote>
+<p>简单来说，就是模拟了window的图形化功能，所以如果想实例化FireFoxWebDriver，仍然需要安装一个firefox。</p>
+<h5 id="Xvfb安装"><a href="#Xvfb安装" class="headerlink" title="Xvfb安装"></a>Xvfb安装</h5><figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">root@xxx:~<span class="comment"># aptitude search xvfb</span></div><div class="line">i   xvfb                                                               - Virtual Framebuffer <span class="string">'fake'</span> X server </div><div class="line">root@xxx:~<span class="comment"># aptitude install xvfb</span></div></pre></td></tr></table></figure>
+<h5 id="Xvfb启动"><a href="#Xvfb启动" class="headerlink" title="Xvfb启动"></a>Xvfb启动</h5><figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">root@xxx:~<span class="comment"># Xvfb :1 -screen 1 1600x1200x16</span></div><div class="line">root@xxx:~<span class="comment"># ps -ef | grep Xvfb</span></div><div class="line">root     <span class="number">19118</span>  <span class="number">4988</span>  <span class="number">0</span> <span class="number">10</span>:<span class="number">48</span> pts/<span class="number">6</span>    <span class="number">00</span>:<span class="number">00</span>:<span class="number">00</span> grep Xvfb</div><div class="line">root     <span class="number">24808</span>     <span class="number">1</span>  <span class="number">0</span> Jun28 pts/<span class="number">1</span>    <span class="number">00</span>:<span class="number">00</span>:<span class="number">33</span> Xvfb :<span class="number">1</span> -screen <span class="number">1</span> <span class="number">1600</span>x1200x16 -nolisten tcp</div></pre></td></tr></table></figure>
+<p>命令的意思是：作为Server Number1 监听。有两个屏幕配置，默认是Screen0，width, height, and depth = 1280x1024x8，第二块屏幕配置为width, height, and depth = 1600x1200x16。</p>
+<p>这里如果用自动启动脚本是更佳的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">root@xxx:/etc/init.d# vim /etc/init.d/xvfb</div><div class="line">#!/bin/bash</div><div class="line">#chkconfig: 345 95 50</div><div class="line">#description: Starts xvfb on display 1</div><div class="line">if [ -z &quot;$1&quot; ]; then</div><div class="line">    echo &quot;`basename $0` &#123;start|stop&#125;&quot;</div><div class="line">    exit</div><div class="line">fi</div><div class="line">case &quot;$1&quot; in</div><div class="line">    start)</div><div class="line">    Xvfb :1 -screen 1 1600x1200x16 -nolisten tcp &amp;</div><div class="line">    export DISPLAY=:1</div><div class="line">    echo &apos;export DISPLAY=:1&apos; &gt;&gt; ~/.bashrc</div><div class="line">    ;;</div><div class="line">    stop)</div><div class="line">    killall Xvfb</div><div class="line">    ;;</div><div class="line">esac</div></pre></td></tr></table></figure>
+<h5 id="Firefox"><a href="#Firefox" class="headerlink" title="Firefox"></a>Firefox</h5><h6 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">root@xxx:~# aptitude search firefox</div><div class="line">i   firefox-esr                                                        - Mozilla Firefox web browser - Extended Support Release (ESR) </div><div class="line">root@xxx:~# aptitude install firefox-esr</div><div class="line">root@xxx:~# firefox -v</div><div class="line">Mozilla Firefox 45.2.0</div></pre></td></tr></table></figure>
+<h6 id="启动firefox"><a href="#启动firefox" class="headerlink" title="启动firefox"></a>启动firefox</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">root@xxx:~# firefox</div><div class="line">Xlib:  extension &quot;RANDR&quot; missing on display &quot;:1&quot;.</div><div class="line">Xlib:  extension &quot;RANDR&quot; missing on display &quot;:1&quot;.</div></pre></td></tr></table></figure>
+<p>到这里是不是有点懵比，界面呢？？ VNC server来解决这个问题</p>
+<h5 id="X11VNC-server"><a href="#X11VNC-server" class="headerlink" title="X11VNC server"></a>X11VNC server</h5><h6 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h6><blockquote>
+<p>x11vnc allows one to view remotely and interact with real X displays (i.e. a display corresponding to a physical monitor, keyboard, and mouse) with any VNC viewer.<br><a href="http://www.karlrunge.com/x11vnc/" target="_blank" rel="external">http://www.karlrunge.com/x11vnc/</a></p>
+</blockquote>
+<h6 id="安装运行"><a href="#安装运行" class="headerlink" title="安装运行"></a>安装运行</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">root@xxx:~# aptitude search X11VNC</div><div class="line">i   x11vnc                                                             - VNC server to allow remote access to an existing X session  </div><div class="line"></div><div class="line">root@xxx:~# aptitude install x11vnc</div><div class="line">root@xxx:~# x11vnc -display :1 -xkb</div></pre></td></tr></table></figure>
+<p>参数解释，Display 1，就是上面Xvfb配置的1号屏幕。<br>-xkb，看到官网解释，是优化键盘输入</p>
+<blockquote>
+<p><a href="http://www.karlrunge.com/x11vnc/x11vnc_opts.html" target="_blank" rel="external">http://www.karlrunge.com/x11vnc/x11vnc_opts.html</a></p>
+</blockquote>
+<h6 id="安装VNC-Viewer"><a href="#安装VNC-Viewer" class="headerlink" title="安装VNC Viewer"></a>安装VNC Viewer</h6><p>这个就不多说了，<a href="http://www.realvnc.com/，来这里找到下载包安装即可。" target="_blank" rel="external">http://www.realvnc.com/，来这里找到下载包安装即可。</a><br>通过VNC viewer链接 云主机，效果如下：<br><img src="viewer.png" alt="Alt text"></p>
+<h4 id="测试执行效果"><a href="#测试执行效果" class="headerlink" title="测试执行效果"></a>测试执行效果</h4><h5 id="测试selenium"><a href="#测试selenium" class="headerlink" title="测试selenium"></a>测试selenium</h5><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#!/usr/bin/env python</span></div><div class="line"><span class="comment"># -*- coding: utf-8 -*-</span></div><div class="line"><span class="keyword">import</span> selenium</div><div class="line"><span class="keyword">from</span> selenium <span class="keyword">import</span> webdriver</div><div class="line"><span class="keyword">from</span> selenium.webdriver.common.keys <span class="keyword">import</span> Keys</div><div class="line"><span class="keyword">from</span> selenium.common.exceptions <span class="keyword">import</span> NoSuchElementException, TimeoutException</div><div class="line">browser = webdriver.Firefox()</div><div class="line">browser.get(<span class="string">"http://www.baidu.com"</span>)</div><div class="line">t=browser.find_element_by_xpath(<span class="string">"//div[contains(@id,'ftCon')]"</span>)</div><div class="line"><span class="keyword">print</span> t.text</div></pre></td></tr></table></figure>
+<p>执行效果如下：<br><img src="CI.png" alt="Alt text"></p>
+<p>成功</p>
+<h4 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h4><ul>
+<li>还未大范围执行，不知道稳定性如何。也不知道和window/Mac OX真实场景相比如何</li>
+<li>openid访问内网一般都需要将军令，这个需要解决。</li>
+<li>Chrome还未实验，不知能否走下去。</li>
+</ul>
+<h4 id="展望"><a href="#展望" class="headerlink" title="展望"></a>展望</h4><ul>
+<li>如果使用Docker，安装Ubuntu的镜像，应该可以快速解决上述环境搭建问题。</li>
+</ul>
+
+      
+    </div>
+
+    <div>
+      
+        
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/UITest/" rel="tag">#UITest</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/08/01/hello-world/" rel="next" title="This is my first step on GitHub">
+                <i class="fa fa-chevron-left"></i> This is my first step on GitHub
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/08/11/Flash-web开发技能树/" rel="prev" title="Flask web开发技能树">
+                Flask web开发技能树 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div class="ds-thread" data-thread-key="2016/08/10/Do-WEBUI-on-Linux/"
+           data-title="Do WEBUI on Linux" data-url="https://professorlea.github.io/2016/08/10/Do-WEBUI-on-Linux/">
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="https://avatars2.githubusercontent.com/u/20817319?v=3&s=460"
+               alt="professorLea" />
+          <p class="site-author-name" itemprop="name">professorLea</p>
+          <p class="site-description motion-element" itemprop="description">professorLea的博客</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">8</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">7</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/professorLea" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/lixiaolei0318" target="_blank" title="微博">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  微博
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#环境搭建"><span class="nav-number">1.</span> <span class="nav-text">环境搭建</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Xvfb介绍"><span class="nav-number">1.1.</span> <span class="nav-text">Xvfb介绍</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Xvfb安装"><span class="nav-number">1.2.</span> <span class="nav-text">Xvfb安装</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Xvfb启动"><span class="nav-number">1.3.</span> <span class="nav-text">Xvfb启动</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Firefox"><span class="nav-number">1.4.</span> <span class="nav-text">Firefox</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#安装"><span class="nav-number">1.4.1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#启动firefox"><span class="nav-number">1.4.2.</span> <span class="nav-text">启动firefox</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#X11VNC-server"><span class="nav-number">1.5.</span> <span class="nav-text">X11VNC server</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#介绍"><span class="nav-number">1.5.1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#安装运行"><span class="nav-number">1.5.2.</span> <span class="nav-text">安装运行</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#安装VNC-Viewer"><span class="nav-number">1.5.3.</span> <span class="nav-text">安装VNC Viewer</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#测试执行效果"><span class="nav-number">2.</span> <span class="nav-text">测试执行效果</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#测试selenium"><span class="nav-number">2.1.</span> <span class="nav-text">测试selenium</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#问题"><span class="nav-number">3.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#展望"><span class="nav-number">4.</span> <span class="nav-text">展望</span></a></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">professorLea</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Pisces
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.0.1"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"professorLea"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+  
+
+
+
+
+
+  
+  
+  
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("xcCHElA4ynn0NVHyERvTJsmA-gzGzoHsz", "V7WiJiTAjY9JcaV8Ihp2CIF1");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+</body>
+</html>

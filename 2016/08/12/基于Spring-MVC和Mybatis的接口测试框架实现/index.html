@@ -1,0 +1,851 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="java,API test," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1" />
+
+
+
+
+
+
+<meta name="description" content="为什么把Spring MVC引入到接口测试中在阅读哨兵系统的源代码进行接口测试的过程中，发现不止哨兵系统，主流运用的都是Spring MVC + Mybatis的框架来开发web。发现这是个很有趣的事物，学习了一段时间，认为里面的一些个编程思想可以引入到接口测试中来。比如spring的AOP（面向切面的编程），DI也就是依赖注入或者控制反转。听起来很高大上的词汇，经过一番实践，发现能够有所理解并且">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于Spring MVC和Mybatis的接口测试框架实现">
+<meta property="og:url" content="https://professorlea.github.io/2016/08/12/基于Spring-MVC和Mybatis的接口测试框架实现/index.html">
+<meta property="og:site_name" content="professorLea">
+<meta property="og:description" content="为什么把Spring MVC引入到接口测试中在阅读哨兵系统的源代码进行接口测试的过程中，发现不止哨兵系统，主流运用的都是Spring MVC + Mybatis的框架来开发web。发现这是个很有趣的事物，学习了一段时间，认为里面的一些个编程思想可以引入到接口测试中来。比如spring的AOP（面向切面的编程），DI也就是依赖注入或者控制反转。听起来很高大上的词汇，经过一番实践，发现能够有所理解并且">
+<meta property="og:image" content="https://professorlea.github.io/1.png">
+<meta property="og:image" content="https://professorlea.github.io/2.png">
+<meta property="og:image" content="https://professorlea.github.io/3.png">
+<meta property="og:image" content="https://professorlea.github.io/4.png">
+<meta property="og:image" content="https://professorlea.github.io/5.png">
+<meta property="og:image" content="https://professorlea.github.io/6.png">
+<meta property="og:image" content="https://professorlea.github.io/7.png">
+<meta property="og:image" content="https://professorlea.github.io/8.png">
+<meta property="og:image" content="https://professorlea.github.io/9.png">
+<meta property="og:image" content="https://professorlea.github.io/10.png">
+<meta property="og:image" content="https://professorlea.github.io/11.png">
+<meta property="og:image" content="https://professorlea.github.io/12.png">
+<meta property="og:image" content="https://professorlea.github.io/13.png">
+<meta property="og:image" content="https://professorlea.github.io/14.png">
+<meta property="og:image" content="https://professorlea.github.io/15.png">
+<meta property="og:image" content="https://professorlea.github.io/16.png">
+<meta property="og:image" content="https://professorlea.github.io/17.png">
+<meta property="og:image" content="https://professorlea.github.io/18.png">
+<meta property="og:image" content="https://professorlea.github.io/19.png">
+<meta property="og:image" content="https://professorlea.github.io/20.png">
+<meta property="og:image" content="https://professorlea.github.io/21.png">
+<meta property="og:image" content="https://professorlea.github.io/22.png">
+<meta property="og:updated_time" content="2016-10-17T07:18:39.208Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="基于Spring MVC和Mybatis的接口测试框架实现">
+<meta name="twitter:description" content="为什么把Spring MVC引入到接口测试中在阅读哨兵系统的源代码进行接口测试的过程中，发现不止哨兵系统，主流运用的都是Spring MVC + Mybatis的框架来开发web。发现这是个很有趣的事物，学习了一段时间，认为里面的一些个编程思想可以引入到接口测试中来。比如spring的AOP（面向切面的编程），DI也就是依赖注入或者控制反转。听起来很高大上的词汇，经过一番实践，发现能够有所理解并且">
+<meta name="twitter:image" content="https://professorlea.github.io/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Pisces',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+  <title> 基于Spring MVC和Mybatis的接口测试框架实现 | professorLea </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">professorLea</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br />
+            
+            公益404
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                基于Spring MVC和Mybatis的接口测试框架实现
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-08-12T11:15:42+08:00" content="2016-08-12">
+              2016-08-12
+            </time>
+          </span>
+
+          
+            <span class="post-category" >
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                  <a href="/categories/测试/" itemprop="url" rel="index">
+                    <span itemprop="name">测试</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                &nbsp; | &nbsp;
+                <a href="/2016/08/12/基于Spring-MVC和Mybatis的接口测试框架实现/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2016/08/12/基于Spring-MVC和Mybatis的接口测试框架实现/" itemprop="commentsCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+
+          
+          
+             <span id="/2016/08/12/基于Spring-MVC和Mybatis的接口测试框架实现/" class="leancloud_visitors" data-flag-title="基于Spring MVC和Mybatis的接口测试框架实现">
+               &nbsp; | &nbsp;
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               <span class="post-meta-item-text">阅读次数 </span>
+               <span class="leancloud-visitors-count"></span>
+              </span>
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h4 id="为什么把Spring-MVC引入到接口测试中"><a href="#为什么把Spring-MVC引入到接口测试中" class="headerlink" title="为什么把Spring MVC引入到接口测试中"></a>为什么把Spring MVC引入到接口测试中</h4><p>在阅读哨兵系统的源代码进行接口测试的过程中，发现不止哨兵系统，主流运用的都是Spring MVC + Mybatis的框架来开发web。<br>发现这是个很有趣的事物，学习了一段时间，认为里面的一些个编程思想可以引入到接口测试中来。比如spring的AOP（面向切面的编程），DI也就是依赖注入或者控制反转。<br>听起来很高大上的词汇，经过一番实践，发现能够有所理解并且也引入到了接口测试中来。<br>先以我工程的代码片段来举例说明，什么叫Spring的依赖注入。 </p>
+<p><img src="1.png" alt="alter text"><br><img src="2.png" alt="alter text"><br><img src="3.png" alt="alter text"></p>
+<p>这里有三张图，第一张是使用NodeService，从第三张图中我们可以看到NodeSerice其实就只是一个接口，那么为什么在我的接口测试代码中可以直接调用它的方法呢：</p>
+<p><img src="4.png" alt="alter text"></p>
+<p> 从第二张图中，是这个接口的实现方法。打了一个@Service的注解。这个@Service的注解就是要告诉Spring框架，这是一个JAVA Bean。<br>那么，神奇的事情发生了。Spring在我的测试业务代码中，使用如下的注解@Autowired，这样Spring就把NodeServiceImpl的实例给创建出来了。</p>
+<p><img src="5.png" alt="alter text"></p>
+<p>这就是所谓的依赖注入，或者是控制反转。因为实例化NodeServiceImpl的操作Spring帮我们做了，所谓的控制权从我们的业务测试代码转移给了Spring。</p>
+<p>那么，这其实就是我理解的AOP，所谓的面向配置或面向切面的编程。在你的业务代码里切入一刀，然后把实例注入进去。，这里说说一句话的事儿，说实话这一句话让我理解了好久。<br><em>（其实@Resource也可以，他们有区别，但是我没搞清楚具体使用起来的区别）</em><br>往常的做法应该是如下面的示例，需要new一个实例。</p>
+<p><img src="6.png" alt="alter text"></p>
+<p>更近一层，既然知道了这样的编程思想。为啥不能把我们常用的HTTP请求的类给转化成这样的呢。答案是肯定的，当然可以。如下面几幅图： </p>
+<p><img src="7.png" alt="alter text"><br><img src="8.png" alt="alter text"><br><img src="9.png" alt="alter text"></p>
+<p>就这样，我们HTTP也是提供给业务测试的一种Service。</p>
+<h4 id="为什么把Mybatis引入到接口测试中"><a href="#为什么把Mybatis引入到接口测试中" class="headerlink" title="为什么把Mybatis引入到接口测试中"></a>为什么把Mybatis引入到接口测试中</h4><p>Mybatis是一款轻量级的持久层框架，也是哨兵系统进行Dao访问用到的框架。我不知道Hibernate，不要问我区别在哪里，轻在哪里，我只知道很轻便。<br>依旧举例说明：<br>首先，展示一下DB层的JAVA代码映射，如下面2张图：</p>
+<p><img src="10.png" alt="alter text"><br><img src="11.png" alt="alter text"></p>
+<p>Node是哨兵系统的一张表，格式如下：<br><img src="12.png" alt="alter text"></p>
+<p>可以看出来Node这个class的所有属性，就是对节点表Node的映射。这就是所谓的DB层。<br>那么Dao层怎么实现的呢，先看图：</p>
+<p><img src="13.png" alt="alter text"><br><img src="14.png" alt="alter text"></p>
+<p>只要定义一个NodeMapper的Interface，然后配置一个nodeMapper.xml，然后我们看到Mapper文件引用的就是NodeMapper这个接口，然后下面的id = create, retrieveById,retrieveByName。很明显，就是这些Interface方法的实现。然后具体内容其实就是带有变量的SQL语句。</p>
+<p>简单的讲，其实Mybatis就是这样容易。不用你在使用JDBC的方式把SQL语句以String的方式写入到代码中。只需要的一个配置文件。这也是所谓的面向切面/配置的编程。</p>
+<h4 id="如何搭建环境实现"><a href="#如何搭建环境实现" class="headerlink" title="如何搭建环境实现"></a>如何搭建环境实现</h4><p>如何使上面这些体系运行起来，这里其实就是Spring的配置的问题。</p>
+<h5 id="第一部分：将Spring把所有的JAVA-Bean扫进来"><a href="#第一部分：将Spring把所有的JAVA-Bean扫进来" class="headerlink" title="第一部分：将Spring把所有的JAVA Bean扫进来"></a>第一部分：将Spring把所有的JAVA Bean扫进来</h5><p><img src="15.png" alt="alter text"></p>
+<h5 id="第二部分：指定数据源dataSource，也就是MySql连接池"><a href="#第二部分：指定数据源dataSource，也就是MySql连接池" class="headerlink" title="第二部分：指定数据源dataSource，也就是MySql连接池"></a>第二部分：指定数据源dataSource，也就是MySql连接池</h5><p><img src="16.png" alt="alter text"></p>
+<h5 id="第三部分：将Mybatis和Spring整合"><a href="#第三部分：将Mybatis和Spring整合" class="headerlink" title="第三部分：将Mybatis和Spring整合"></a>第三部分：将Mybatis和Spring整合</h5><p><img src="17.png" alt="alter text"></p>
+<p>SqlSessionFactoryBean这个类是Spring提供应用于建立SQL连接池的。<br>其中：</p>
+<ul>
+<li>typeAliasesPackage：它一般对应我们的实体类所在的包，这个时候会自动取对应包中不包括包名的简单类名作为包括包名的别名。多个package之间可以用逗号或者分号等来进行分隔。</li>
+<li>MapperScannerConfigurer：<br>利用上面的方法进行整合的时候，我们有一个Mapper就需要定义一个对应的MapperFactoryBean，当我们的Mapper比较少的时候，这样做也还可以，但是当我们的Mapper相当多时我们再这样定义一个个Mapper对应的MapperFactoryBean就显得速度比较慢了。为此Mybatis-Spring为我们提供了一个叫做MapperScannerConfigurer的类，通过这个类Mybatis-Spring会自动为我们注册Mapper对应的MapperFactoryBean对象。</li>
+</ul>
+<p>好了。你可以做TestNG的测试业务代码编写了。 </p>
+<h5 id="如何进行TestNG和Spring的结合"><a href="#如何进行TestNG和Spring的结合" class="headerlink" title="如何进行TestNG和Spring的结合"></a>如何进行TestNG和Spring的结合</h5><p>在每一个测试类中按照下面这么配置：<br><img src="18.png" alt="alter text"></p>
+<p>@ContextConfiguration和AbstractTestNGSpringContextTests就可以做到。<br>原因是：因为我这个是Maven工程，执行的是Maven test命令。而Spring运行test的时候是一个隔离的状态。所以没有办法注入。<br>这里找到的答案：<br>“If you create unit tests, Spring IoC functionality is unavailable(as it was intended by the framework designers), because you are testing your objects in isolation(i.e. you are mocking only minimal set of interfaces which are required for the test to complete). “</p>
+<blockquote>
+<p>[引自]：(<a href="http://stackoverflow.com/questions/13092322/spring-testng-integration-tests-injecting-dao-with-annotations-fails" target="_blank" rel="external">http://stackoverflow.com/questions/13092322/spring-testng-integration-tests-injecting-dao-with-annotations-fails</a>)</p>
+</blockquote>
+<p>继续你的业务代码编写吧。</p>
+<h4 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h4><h5 id="IDE的选择"><a href="#IDE的选择" class="headerlink" title="IDE的选择"></a>IDE的选择</h5><p>IntelliJ IDEA真的是太好用了。</p>
+<ul>
+<li>天生集成了Maven, Git。并且比如什么markdown语言啊，freeMarker，git的ignore文件这些都是可以智能编写。</li>
+<li>有code inspection功能。你Git push的时候它会有个选项让你做一下code inspection再说..</li>
+<li>而且正如名字所说，智能。联想功能很强大。</li>
+<li>长得好看，速度快..</li>
+</ul>
+<h5 id="技巧"><a href="#技巧" class="headerlink" title="技巧"></a>技巧</h5><ul>
+<li>Alt+F8，呼唤出Maven的window。</li>
+<li>shift+esc,退出窗口</li>
+<li>Ctrl+alt+S, 呼唤出Setting配置出现错误的时候，</li>
+<li>alt+Enter，出现错误时，它可以给很好联想出解决办法的。</li>
+<li>可以选择Eclipse的喜好，默认支持Eclipse的所有快捷键。</li>
+<li>支持VIM编辑器，对于那些linux大神们，可以用这种全宇宙最强大的编辑器了。我不会用。</li>
+<li>….</li>
+</ul>
+<h5 id="如何在TestNG中调试"><a href="#如何在TestNG中调试" class="headerlink" title="如何在TestNG中调试"></a>如何在TestNG中调试</h5><p><strong>配置maven命令如下</strong><br>surefire是maven的一个插件，专门用来test的，TestNG的测试一系列比如报告生成啊，什么都是它来做的<br><img src="19.png" alt="alter text"></p>
+<p><strong>建立一个Remote</strong><br><img src="20.png" alt="alter text"><br>这个5005端口是默认打开的一个用于连接的端口，在下面的图会有体现。</p>
+<p><strong>运行Maven命令</strong><br><img src="21.png" alt="alter text"><br>这个时候test的进程就停在那里了。</p>
+<p><strong>运行Remote</strong><br><img src="22.png" alt="alter text"></p>
+<p>这个时候，只要有断点，就可以断下来了。<br>至于TestNG本身的知识，这里就不多说了，很多注解和属性我也在使用中。</p>
+<h4 id="碰见的坑"><a href="#碰见的坑" class="headerlink" title="碰见的坑"></a>碰见的坑</h4><ul>
+<li>Spring和TestNG的结合，请参阅前面的章节，如果不这么做，TestNG是不会引入spring的所有配置文件的。</li>
+<li>TestNG的调试，参阅前面的章节</li>
+<li>StringEntity() 和 UrlEncodedFormEntity() 的区别：</li>
+</ul>
+<p>加载HTTP参数的时候，之前用的UrlEncodedFormEntity，参数传过去不识别。最后发现问题在这里。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">httppost.setEntity(<span class="keyword">new</span> StringEntity(JSON.toJSONString(params), <span class="string">"UTF-8"</span>));</div></pre></td></tr></table></figure>
+<p>可以参考：<a href="http://xiaoliandroid.blog.51cto.com/4103661/1625766" target="_blank" rel="external">链接</a></p>
+<p>有啥问题，可以一起讨论学习。</p>
+
+      
+    </div>
+
+    <div>
+      
+        
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag">#java</a>
+          
+            <a href="/tags/API-test/" rel="tag">#API test</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/08/12/Practise-with-Appium-on-IOS/" rel="next" title="Practise with Appium on IOS">
+                <i class="fa fa-chevron-left"></i> Practise with Appium on IOS
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/08/12/Think-as-developer-从深入理解业务实现框架开始/" rel="prev" title="Think as developer,从深入理解业务实现框架开始">
+                Think as developer,从深入理解业务实现框架开始 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div class="ds-thread" data-thread-key="2016/08/12/基于Spring-MVC和Mybatis的接口测试框架实现/"
+           data-title="基于Spring MVC和Mybatis的接口测试框架实现" data-url="https://professorlea.github.io/2016/08/12/基于Spring-MVC和Mybatis的接口测试框架实现/">
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="https://avatars2.githubusercontent.com/u/20817319?v=3&s=460"
+               alt="professorLea" />
+          <p class="site-author-name" itemprop="name">professorLea</p>
+          <p class="site-description motion-element" itemprop="description">professorLea的博客</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">8</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">7</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/professorLea" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/lixiaolei0318" target="_blank" title="微博">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  微博
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么把Spring-MVC引入到接口测试中"><span class="nav-number">1.</span> <span class="nav-text">为什么把Spring MVC引入到接口测试中</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#为什么把Mybatis引入到接口测试中"><span class="nav-number">2.</span> <span class="nav-text">为什么把Mybatis引入到接口测试中</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#如何搭建环境实现"><span class="nav-number">3.</span> <span class="nav-text">如何搭建环境实现</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#第一部分：将Spring把所有的JAVA-Bean扫进来"><span class="nav-number">3.1.</span> <span class="nav-text">第一部分：将Spring把所有的JAVA Bean扫进来</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#第二部分：指定数据源dataSource，也就是MySql连接池"><span class="nav-number">3.2.</span> <span class="nav-text">第二部分：指定数据源dataSource，也就是MySql连接池</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#第三部分：将Mybatis和Spring整合"><span class="nav-number">3.3.</span> <span class="nav-text">第三部分：将Mybatis和Spring整合</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#如何进行TestNG和Spring的结合"><span class="nav-number">3.4.</span> <span class="nav-text">如何进行TestNG和Spring的结合</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#其他"><span class="nav-number">4.</span> <span class="nav-text">其他</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#IDE的选择"><span class="nav-number">4.1.</span> <span class="nav-text">IDE的选择</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#技巧"><span class="nav-number">4.2.</span> <span class="nav-text">技巧</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#如何在TestNG中调试"><span class="nav-number">4.3.</span> <span class="nav-text">如何在TestNG中调试</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#碰见的坑"><span class="nav-number">5.</span> <span class="nav-text">碰见的坑</span></a></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">professorLea</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Pisces
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.0.1"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"professorLea"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+  
+
+
+
+
+
+  
+  
+  
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("xcCHElA4ynn0NVHyERvTJsmA-gzGzoHsz", "V7WiJiTAjY9JcaV8Ihp2CIF1");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+</body>
+</html>

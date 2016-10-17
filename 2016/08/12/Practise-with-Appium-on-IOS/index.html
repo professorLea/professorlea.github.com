@@ -1,0 +1,876 @@
+<!doctype html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/vendors/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/vendors/font-awesome/css/font-awesome.min.css?v=4.4.0" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.0.1" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="UITest,IOS," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.0.1" />
+
+
+
+
+
+
+<meta name="description" content="安装有两种方式。
+第一种方式：通过npm，你必定需要在一台OS X系统上，亲。所以Homebrew先要有。
+1234&amp;gt; brew install node           # get node.js&amp;gt; npm install -g appium   # get appium&amp;gt; npm install wd               # get appium client&amp;g">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Practise with Appium on IOS">
+<meta property="og:url" content="https://professorlea.github.io/2016/08/12/Practise-with-Appium-on-IOS/index.html">
+<meta property="og:site_name" content="professorLea">
+<meta property="og:description" content="安装有两种方式。
+第一种方式：通过npm，你必定需要在一台OS X系统上，亲。所以Homebrew先要有。
+1234&amp;gt; brew install node           # get node.js&amp;gt; npm install -g appium   # get appium&amp;gt; npm install wd               # get appium client&amp;g">
+<meta property="og:image" content="https://professorlea.github.io/1.png">
+<meta property="og:image" content="https://professorlea.github.io/2.png">
+<meta property="og:image" content="https://professorlea.github.io/3.png">
+<meta property="og:image" content="https://professorlea.github.io/4.png">
+<meta property="og:image" content="https://professorlea.github.io/5.png">
+<meta property="og:image" content="https://professorlea.github.io/6.png">
+<meta property="og:image" content="https://professorlea.github.io/7.png">
+<meta property="og:image" content="https://professorlea.github.io/8.png">
+<meta property="og:updated_time" content="2016-10-17T07:27:58.304Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Practise with Appium on IOS">
+<meta name="twitter:description" content="安装有两种方式。
+第一种方式：通过npm，你必定需要在一台OS X系统上，亲。所以Homebrew先要有。
+1234&amp;gt; brew install node           # get node.js&amp;gt; npm install -g appium   # get appium&amp;gt; npm install wd               # get appium client&amp;g">
+<meta name="twitter:image" content="https://professorlea.github.io/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configuration">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    scheme: 'Pisces',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: true,
+    duoshuo: {
+      userId: 0,
+      author: '博主'
+    }
+  };
+</script>
+
+  <title> Practise with Appium on IOS | professorLea </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">professorLea</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+  <p class="site-subtitle"></p>
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br />
+            
+            公益404
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                Practise with Appium on IOS
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            <span class="post-meta-item-icon">
+              <i class="fa fa-calendar-o"></i>
+            </span>
+            <span class="post-meta-item-text">发表于</span>
+            <time itemprop="dateCreated" datetime="2016-08-12T09:06:27+08:00" content="2016-08-12">
+              2016-08-12
+            </time>
+          </span>
+
+          
+            <span class="post-category" >
+              &nbsp; | &nbsp;
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+              
+                <span itemprop="about" itemscope itemtype="https://schema.org/Thing">
+                  <a href="/categories/测试/" itemprop="url" rel="index">
+                    <span itemprop="name">测试</span>
+                  </a>
+                </span>
+
+                
+                
+
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                &nbsp; | &nbsp;
+                <a href="/2016/08/12/Practise-with-Appium-on-IOS/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count ds-thread-count" data-thread-key="2016/08/12/Practise-with-Appium-on-IOS/" itemprop="commentsCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+
+          
+          
+             <span id="/2016/08/12/Practise-with-Appium-on-IOS/" class="leancloud_visitors" data-flag-title="Practise with Appium on IOS">
+               &nbsp; | &nbsp;
+               <span class="post-meta-item-icon">
+                 <i class="fa fa-eye"></i>
+               </span>
+               <span class="post-meta-item-text">阅读次数 </span>
+               <span class="leancloud-visitors-count"></span>
+              </span>
+          
+
+          
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h4 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h4><p>有两种方式。</p>
+<p><strong>第一种方式：</strong><br>通过npm，你必定需要在一台OS X系统上，亲。所以Homebrew先要有。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&gt; brew install node           # get node.js</div><div class="line">&gt; npm install -g appium   # get appium</div><div class="line">&gt; npm install wd               # get appium client</div><div class="line">&gt; appium &amp;                      # start appium</div></pre></td></tr></table></figure>
+<p>版本号如图：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">myMac:release-iphonesimulator root$ node -v</div><div class="line">v5.6.0</div><div class="line">myMac:release-iphonesimulator root$ npm -v</div><div class="line">3.6.0</div><div class="line">myMac:release-iphonesimulator root$ appium -v</div><div class="line">1.4.16</div></pre></td></tr></table></figure>
+<p><em>tips：这里NPM的安装可以使用taboo提供的国内镜像。</em></p>
+<p><strong>具体参考：</strong><br><a href="https://npm.taobao.org/" target="_blank" rel="external">npm taobao</a><br>或者安装成taboo的CNPM。其本质就是APM加了参数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">--registry=https://registry.npm.taobao.org</div></pre></td></tr></table></figure>
+<p>比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ npm install g cnpm -registry=https://registry.npm.taobao.org</div></pre></td></tr></table></figure>
+<p>appium运行后会出现下面的截图：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">myMac:release-iphonesimulator root$ info: Welcome to Appium v1.4.16 (REV ae6877eff263066b26328d457bd285c0cc62430d)</div><div class="line">info: Appium REST http interface listener started on 0.0.0.0:4723</div><div class="line">info: Console LogLevel: debug</div></pre></td></tr></table></figure>
+<p>这里需要说明的是IOS9.2 xcode7以上的版本，只有appium1.5.0才支持，而现在在2015.02.26刚release。<strong>可见自动化工具要在IOS版本之后很久才能支持。</strong></p>
+<p><strong>第二种方式：</strong><br>直接下载appium.img包，安装成一个界面应用。如图所示</p>
+<p><img src="1.png" alt="alter text"></p>
+<p>不难看出这里的支持安卓和IOS两种。<br>以IOS为例，这里的配置项和我们通过代码的方式是一样。代码在下面不要急。</p>
+<p><img src="2.png" alt="alter text"></p>
+<p>需要注意的是这里通过Launch启动不能和之前通过命令行启动一起使用，否则会出现：</p>
+<p><img src="3.png" alt="alter text"></p>
+<p>提示端口占用。</p>
+<h4 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h4><p>那么server起来之后就可以写测试脚本了。现在介绍一下appium。它分为server和client。</p>
+<ul>
+<li><p>server: Appium 服务端定义了官方协议的扩展，为Appium用户提供了方便的接口来执行各种设备动作，例如在测试过程中安装/卸载app。所以只要启动server如上面所述即可。</p>
+</li>
+<li><p>client是对selenium的简单扩展。所以selenium支持的开发语言，appium都支持：</p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">语言</th>
+<th style="text-align:center">url</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Ruby</td>
+<td style="text-align:center"><a href="https://github.com/appium/ruby_lib" target="_blank" rel="external">https://github.com/appium/ruby_lib</a></td>
+</tr>
+<tr>
+<td style="text-align:center">Python</td>
+<td style="text-align:center"><a href="https://github.com/appium/python-client" target="_blank" rel="external">https://github.com/appium/python-client</a></td>
+</tr>
+<tr>
+<td style="text-align:center">Java</td>
+<td style="text-align:center"><a href="https://github.com/appium/java-client" target="_blank" rel="external">https://github.com/appium/java-client</a></td>
+</tr>
+<tr>
+<td style="text-align:center">JavaScript (Node.js)</td>
+<td style="text-align:center"><a href="https://github.com/admc/wd" target="_blank" rel="external">https://github.com/admc/wd</a></td>
+</tr>
+<tr>
+<td style="text-align:center">Objective C</td>
+<td style="text-align:center"><a href="https://github.com/appium/selenium-objective-c" target="_blank" rel="external">https://github.com/appium/selenium-objective-c</a></td>
+</tr>
+<tr>
+<td style="text-align:center">PHP</td>
+<td style="text-align:center"><a href="https://github.com/appium/php-client" target="_blank" rel="external">https://github.com/appium/php-client</a></td>
+</tr>
+<tr>
+<td style="text-align:center">C# (.NET)</td>
+<td style="text-align:center"><a href="https://github.com/appium/appium-dotnet-driver" target="_blank" rel="external">https://github.com/appium/appium-dotnet-driver</a></td>
+</tr>
+<tr>
+<td style="text-align:center">RobotFramework</td>
+<td style="text-align:center"><a href="https://github.com/jollychang/robotframework-appiumlibrary" target="_blank" rel="external">https://github.com/jollychang/robotframework-appiumlibrary</a></td>
+</tr>
+</tbody>
+</table>
+<p>这里我们用JAVA。通过pom来引入java-client，嗯，maven都很熟，不是重点。</p>
+<p><img src="4.png" alt="alter text"></p>
+<p>其实所谓的client就是你的测试脚本。<br><strong>仍然秉承selenium web UI的测试思路，测试数据、ui控件描述和测试逻辑三者之间的独立。</strong><br>自然而然，使用成功实践的项目组织结构如下，当然具体工具还是熟悉的TestNG + Maven：<br><img src="5.png" alt="alter text"></p>
+<p>其中page_object 文件夹，是每个页面的元素的获取的类<br><img src="6.png" alt="alter text"></p>
+<p>测试类：IOSPageObjecttest是测试执行<br><img src="7.png" alt="alter text"></p>
+<ul>
+<li>第一个红框里的都是需要定义的，从字面也可以理解<br>app的路径就是通过xcode来生成的路径。这个就是被测对象。<br>需要定义Platform，Platform version（IOS的版本号），DEVICE_NAME(通过Xcode的devices可以查看)，UDID（通过xcode的devices查看）。模拟器测试可以忽略UDID这个选项。但是对于真机调试是必须的<br>选项。后续将如果进行真机调试</li>
+<li>第二个红框是初始化测试的Page，也就是页面元素获取，实例化图一。然后使用类似于selenium web driver的方式，初始化一个driver，然后绑定pagefactory</li>
+<li>第三个红框就是具体的测试用例。<br>本例使用的是Junit，所以有setup  tearDown操作。TestNG类似，可以使用@Beforetest这样的annotation来做到。<br>用例运行，这个就是maven的操作了：</li>
+</ul>
+<p>全集执行或者单个用例执行：:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mvn test</div><div class="line">mvn -Dtest=com.saucelabs.appium.iOSPageObjectTest test</div></pre></td></tr></table></figure>
+<h4 id="真机调试"><a href="#真机调试" class="headerlink" title="真机调试"></a>真机调试</h4><p>上面的所以工作在进行IOS simulator测试并不会出现很多问题。但是真机调试的问题就来了。IOS的生态系统比较严谨，证书很多。如果你所测试的设备没有在某个开发者账户下，那么就不会签名认证，就不会生成app。<br>你需要：</p>
+<ul>
+<li>描述文件（Provisioning Profiles）</li>
+<li>开发者证书(os_development.cer，或者已经到处的p12文件)</li>
+</ul>
+<p>所有都搞定了。这里你慢慢找吧，你需要一天时间。<br>就可以通过前面介绍的两种方式的任意一种，使用appium的GUI（appium-dot-app）或者命令行来执行case。</p>
+<h4 id="appium-inspector"><a href="#appium-inspector" class="headerlink" title="appium inspector"></a>appium inspector</h4><p>其本质是定位元素：<br><img src="8.png" alt="alter text"></p>
+<p>类似于Chrome developer tools，无需过多介绍。<br>通过这个网站 <a href="http://www.xpathtester.com/xpath" target="_blank" rel="external">xpathtester</a><br>将view hierarchy的xml文件load进来后，可以简化path的获取。<br>就这些吧，自己玩。IOS及OS X是另外一个生态系统，慢慢玩起。</p>
+<h4 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h4><ol>
+<li><a href="https://github.com/appium/appium-dot-apphttps://github.com/appium/appium-dot-app" target="_blank" rel="external">appium GUI</a></li>
+<li><a href="http://appium.io/http://appium.io/" target="_blank" rel="external">appium官网</a></li>
+<li><a href="http://appium.io/slate/cn/master/?java#about-appium" target="_blank" rel="external">appium API中文版</a></li>
+<li><a href="https://github.com/leecade/ios-dev-flow" target="_blank" rel="external">IOS证书介绍</a></li>
+<li><a href="https://github.com/appium/appium/blob/master/docs/en/appium-setup/real-devices.mdhttps://github.com/appium/appium/blob/master/docs/en/appium-setup/real-devices.md" target="_blank" rel="external">appium真机调试</a></li>
+<li><a href="https://github.com/appium/java-client" target="_blank" rel="external">appium java client</a></li>
+<li><a href="http://doc.hz.netease.com/pages/worddav/preview.action?fileName=%E8%91%9B%E9%94%8B-appium%E5%9C%A8%E6%B6%88%E6%81%AF%E6%8E%A8%E9%80%81%E5%B9%B3%E5%8F%B0%E7%9A%84%E5%BA%94%E7%94%A8.ppt&amp;pageId=37660981" target="_blank" rel="external">葛锋-appium在消息推送平台的应用(内部网站)</a></li>
+</ol>
+
+      
+    </div>
+
+    <div>
+      
+        
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/UITest/" rel="tag">#UITest</a>
+          
+            <a href="/tags/IOS/" rel="tag">#IOS</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/08/11/Flash-web开发技能树/" rel="next" title="Flask web开发技能树">
+                <i class="fa fa-chevron-left"></i> Flask web开发技能树
+              </a>
+            
+          </div>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/08/12/基于Spring-MVC和Mybatis的接口测试框架实现/" rel="prev" title="基于Spring MVC和Mybatis的接口测试框架实现">
+                基于Spring MVC和Mybatis的接口测试框架实现 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+      <div class="ds-thread" data-thread-key="2016/08/12/Practise-with-Appium-on-IOS/"
+           data-title="Practise with Appium on IOS" data-url="https://professorlea.github.io/2016/08/12/Practise-with-Appium-on-IOS/">
+      </div>
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel ">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="https://avatars2.githubusercontent.com/u/20817319?v=3&s=460"
+               alt="professorLea" />
+          <p class="site-author-name" itemprop="name">professorLea</p>
+          <p class="site-description motion-element" itemprop="description">professorLea的博客</p>
+        </div>
+        <nav class="site-state motion-element">
+          <div class="site-state-item site-state-posts">
+            <a href="/archives">
+              <span class="site-state-item-count">8</span>
+              <span class="site-state-item-name">日志</span>
+            </a>
+          </div>
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">3</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">7</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+            
+              <span class="links-of-author-item">
+                <a href="https://github.com/professorLea" target="_blank" title="GitHub">
+                  
+                    <i class="fa fa-fw fa-github"></i>
+                  
+                  GitHub
+                </a>
+              </span>
+            
+              <span class="links-of-author-item">
+                <a href="http://weibo.com/lixiaolei0318" target="_blank" title="微博">
+                  
+                    <i class="fa fa-fw fa-globe"></i>
+                  
+                  微博
+                </a>
+              </span>
+            
+          
+        </div>
+
+        
+        
+
+        
+        
+
+      </section>
+
+      
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+            
+              
+            
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#安装"><span class="nav-number">1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#测试"><span class="nav-number">2.</span> <span class="nav-text">测试</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#真机调试"><span class="nav-number">3.</span> <span class="nav-text">真机调试</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#appium-inspector"><span class="nav-number">4.</span> <span class="nav-text">appium inspector</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Reference"><span class="nav-number">5.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+            
+          </div>
+        </section>
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2016</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">professorLea</span>
+</div>
+
+<div class="powered-by">
+  由 <a class="theme-link" href="http://hexo.io">Hexo</a> 强力驱动
+</div>
+
+<div class="theme-info">
+  主题 -
+  <a class="theme-link" href="https://github.com/iissnan/hexo-theme-next">
+    NexT.Pisces
+  </a>
+</div>
+
+        
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script type="text/javascript" src="/vendors/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/vendors/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/vendors/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.0.1"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.0.1"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.0.1"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.0.1"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.0.1"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.0.1"></script>
+
+
+
+  
+
+  
+    
+  
+
+  <script type="text/javascript">
+    var duoshuoQuery = {short_name:"professorLea"};
+    (function() {
+      var ds = document.createElement('script');
+      ds.type = 'text/javascript';ds.async = true;
+      ds.id = 'duoshuo-script';
+      ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+      ds.charset = 'UTF-8';
+      (document.getElementsByTagName('head')[0]
+      || document.getElementsByTagName('body')[0]).appendChild(ds);
+    })();
+  </script>
+
+  
+    
+  
+
+
+
+
+
+  
+  
+  
+
+  
+
+  
+  <script src="https://cdn1.lncld.net/static/js/av-core-mini-0.6.1.js"></script>
+  <script>AV.initialize("xcCHElA4ynn0NVHyERvTJsmA-gzGzoHsz", "V7WiJiTAjY9JcaV8Ihp2CIF1");</script>
+  <script>
+    function showTime(Counter) {
+      var query = new AV.Query(Counter);
+      var entries = [];
+      var $visitors = $(".leancloud_visitors");
+
+      $visitors.each(function () {
+        entries.push( $(this).attr("id").trim() );
+      });
+
+      query.containedIn('url', entries);
+      query.find()
+        .done(function (results) {
+          var COUNT_CONTAINER_REF = '.leancloud-visitors-count';
+
+          if (results.length === 0) {
+            $visitors.find(COUNT_CONTAINER_REF).text(0);
+            return;
+          }
+
+          for (var i = 0; i < results.length; i++) {
+            var item = results[i];
+            var url = item.get('url');
+            var time = item.get('time');
+            var element = document.getElementById(url);
+
+            $(element).find(COUNT_CONTAINER_REF).text(time);
+          }
+        })
+        .fail(function (object, error) {
+          console.log("Error: " + error.code + " " + error.message);
+        });
+    }
+
+    function addCount(Counter) {
+      var $visitors = $(".leancloud_visitors");
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+      var query = new AV.Query(Counter);
+
+      query.equalTo("url", url);
+      query.find({
+        success: function(results) {
+          if (results.length > 0) {
+            var counter = results[0];
+            counter.fetchWhenSave(true);
+            counter.increment("time");
+            counter.save(null, {
+              success: function(counter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.get('time'));
+              },
+              error: function(counter, error) {
+                console.log('Failed to save Visitor num, with error message: ' + error.message);
+              }
+            });
+          } else {
+            var newcounter = new Counter();
+            /* Set ACL */
+            var acl = new AV.ACL();
+            acl.setPublicReadAccess(true);
+            acl.setPublicWriteAccess(true);
+            newcounter.setACL(acl);
+            /* End Set ACL */
+            newcounter.set("title", title);
+            newcounter.set("url", url);
+            newcounter.set("time", 1);
+            newcounter.save(null, {
+              success: function(newcounter) {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(newcounter.get('time'));
+              },
+              error: function(newcounter, error) {
+                console.log('Failed to create');
+              }
+            });
+          }
+        },
+        error: function(error) {
+          console.log('Error:' + error.code + " " + error.message);
+        }
+      });
+    }
+
+    $(function() {
+      var Counter = AV.Object.extend("Counter");
+      if ($('.leancloud_visitors').length == 1) {
+        addCount(Counter);
+      } else if ($('.post-title-link').length > 1) {
+        showTime(Counter);
+      }
+    });
+  </script>
+
+
+
+  
+
+</body>
+</html>
