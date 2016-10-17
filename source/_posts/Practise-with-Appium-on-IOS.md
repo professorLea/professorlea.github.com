@@ -21,11 +21,11 @@ categories: 测试
 版本号如图：
 
 ```shell
-hzlixiaoleideiMac:release-iphonesimulator netease$ node -v
+myMac:release-iphonesimulator root$ node -v
 v5.6.0
-hzlixiaoleideiMac:release-iphonesimulator netease$ npm -v
+myMac:release-iphonesimulator root$ npm -v
 3.6.0
-hzlixiaoleideiMac:release-iphonesimulator netease$ appium -v
+myMac:release-iphonesimulator root$ appium -v
 1.4.16
 ```
 
@@ -47,7 +47,7 @@ $ npm install g cnpm -registry=https://registry.npm.taobao.org
 appium运行后会出现下面的截图：
 
 ```shell
-hzlixiaoleideiMac:release-iphonesimulator netease$ info: Welcome to Appium v1.4.16 (REV ae6877eff263066b26328d457bd285c0cc62430d)
+myMac:release-iphonesimulator root$ info: Welcome to Appium v1.4.16 (REV ae6877eff263066b26328d457bd285c0cc62430d)
 info: Appium REST http interface listener started on 0.0.0.0:4723
 info: Console LogLevel: debug
 ```

@@ -171,7 +171,6 @@ master1:name=secondmaster,status=ok,address=10.165.124.10:16381,slaves=1,sentine
 **JedisSentinelPool**可以直接想sentinel查询当前master的ip port，在建立连接。
 
 ```java
-package com.netease.nlp;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPoolConfig;
@@ -306,7 +305,7 @@ https://github.com/tutumcloud/redis
 
 
 #### 彩蛋
-##### 网易内部的一款产品的架构图：
+##### 一款成功产品的架构图：
 单点式： 一主多从
 ![Alt text](single.png)
 
@@ -321,8 +320,6 @@ https://github.com/tutumcloud/redis
 ```dockerfile
 FROM tutum/redis:latest
 
-MAINTAINER Xiaolei Li "professorLea@163.com"
-
 # redis configuration
 ENV REDIS_PASS "123456"
 ENV REDIS_MAXMEMORY_POLICY="allkeys-lru"
@@ -335,13 +332,13 @@ ENV REDIS_APPENDFSYNC=everysec
 集群1：
 
 ```powershell
-docker run -d --name master1 -p 16379:6379 professorlea/redis
-docker run -d --name slave1 -p 16380:6379 -e -e REDIS_MASTERAUTH="123456" professorlea/redis
+docker run -d --name master1 -p 16379:6379 test/redis
+docker run -d --name slave1 -p 16380:6379 -e -e REDIS_MASTERAUTH="123456" test/redis
 ```
 
 集群2：
 
 ```powershell
-docker run -d --name master2 -p 16381:6379 professorlea/redis
-docker run -d --name slave2 -p 16382:6379 -e REDIS_MASTERAUTH="123456" professorlea/redis
+docker run -d --name master2 -p 16381:6379 test/redis
+docker run -d --name slave2 -p 16382:6379 -e REDIS_MASTERAUTH="123456" test/redis
 ```

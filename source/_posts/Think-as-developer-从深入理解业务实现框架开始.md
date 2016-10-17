@@ -14,8 +14,8 @@ categories: 测试
 鉴于目前接触到的大多PC端的项目，大多是war包形式走的tomcat。所以这篇文章主要是面向这类产品的一些阅读方法和技巧总结进行的一些实践活动。
 
 **源自**
-- 哨兵系统Web API Task模块源码阅读
-- FAQ智能语音JAVA层源码阅读
+- 某运维监控系统Web API Task模块源码阅读
+- 某智能语音项目JAVA层源码阅读
 
 **Get到那些点**
 - 一个web项目的容器启动的入口是什么
@@ -79,9 +79,9 @@ Java web开发离不开servlet，servlet的生命周期是有Tomcat/jetty这样�
 这里碰见过一个事情：我有个外部的服务需要初始化，初始化如下：
 
 ```java
-    <bean id="qbsService" class="com.netease.qadev.utils.qbs.QbsServiceImpl">
-        <constructor-arg index="0" value="${qbs.baseURL}" />
-        <constructor-arg index="1" value="${qbs.token}" />
+    <bean id="qaService" class="com.xxx.utils.qa.qaServiceImpl">
+        <constructor-arg index="0" value="${baseURL}" />
+        <constructor-arg index="1" value="${token}" />
     </bean>
 ```
 我用它的地方是在一个controller里面，然而放在spring-mvc-config.xml就编译失败，说找不到这个bean。放在spring-context-web.xml就可以。这里就延伸出来另外一个话题 **spring和springMVC是两件事**。
@@ -173,17 +173,18 @@ Controller层，Service层及DAO层，以及filter：
 
 这里碰见过一个事情：我有个外部的服务需要初始化，初始化如下：
 
+
 ```java
-    <bean id="qbsService"class="com.netease.qadev.utils.qbs.QbsServiceImpl">
-        <constructor-arg index="0" value="${qbs.baseURL}" />
-        <constructor-arg index="1" value="${qbs.token}" />
+    <bean id="qaService" class="com.xxx.utils.qa.qaServiceImpl">
+        <constructor-arg index="0" value="${baseURL}" />
+        <constructor-arg index="1" value="${token}" />
     </bean>
 ```
 
 我用它的地方是在一个controller里面，然而放在spring-mvc-config.xml就编译失败，说找不到这个bean。具体为啥，可以参考上一节。因为这些bean并不是有Spring MVC通过@Service标签来统一注入管理。那么它的初始化过程应该要放入spring-context-web.xml，在spring mvc介入之间就需要实例化。否则当然只是一个接口。 
 
 #### 得到什么
-- 在我新take的一个FAQ智能语音机器人项目中，在没有任何需求设计接口文档的情况下，要开展测试工作，只能先从源码开始，之前的经验帮助了我，理清楚了所有接口的处理逻辑（毕竟是半路接手项目，只能先解决问题为先）。基本上一两天功夫就可以把源码读懂。当时的几个思维导图之一如下：
+- 在我新take的一个某智能语音机器人项目中，在没有任何需求设计接口文档的情况下，要开展测试工作，只能先从源码开始，之前的经验帮助了我，理清楚了所有接口的处理逻辑（毕竟是半路接手项目，只能先解决问题为先）。基本上一两天功夫就可以把源码读懂。当时的几个思维导图之一如下：
  ![Alt pic](4.png) 
 
 后面就是欢快的写接口用例case了。

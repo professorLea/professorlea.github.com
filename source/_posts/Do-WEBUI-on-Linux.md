@@ -14,15 +14,15 @@ categories: 测试
 
 ##### Xvfb安装
 ```powershell
-root@classb-opsdevtest-in4:~# aptitude search xvfb
+root@xxx:~# aptitude search xvfb
 i   xvfb                                                               - Virtual Framebuffer 'fake' X server 
-root@classb-opsdevtest-in4:~# aptitude install xvfb
+root@xxx:~# aptitude install xvfb
 ```
 ##### Xvfb启动
 
 ```powershell
-root@classb-opsdevtest-in4:~# Xvfb :1 -screen 1 1600x1200x16
-root@classb-opsdevtest-in4:~# ps -ef | grep Xvfb
+root@xxx:~# Xvfb :1 -screen 1 1600x1200x16
+root@xxx:~# ps -ef | grep Xvfb
 root     19118  4988  0 10:48 pts/6    00:00:00 grep Xvfb
 root     24808     1  0 Jun28 pts/1    00:00:33 Xvfb :1 -screen 1 1600x1200x16 -nolisten tcp
 ```
@@ -31,7 +31,7 @@ root     24808     1  0 Jun28 pts/1    00:00:33 Xvfb :1 -screen 1 1600x1200x16 -
 这里如果用自动启动脚本是更佳的：
 
 ```shell
-root@classb-opsdevtest-in4:/etc/init.d# vim /etc/init.d/xvfb
+root@xxx:/etc/init.d# vim /etc/init.d/xvfb
 #!/bin/bash
 #chkconfig: 345 95 50
 #description: Starts xvfb on display 1
@@ -55,17 +55,17 @@ esac
 ###### 安装
 
 ```shell
-root@classb-opsdevtest-in4:~# aptitude search firefox
+root@xxx:~# aptitude search firefox
 i   firefox-esr                                                        - Mozilla Firefox web browser - Extended Support Release (ESR) 
-root@classb-opsdevtest-in4:~# aptitude install firefox-esr
-root@classb-opsdevtest-in4:~# firefox -v
+root@xxx:~# aptitude install firefox-esr
+root@xxx:~# firefox -v
 Mozilla Firefox 45.2.0
 ```
 
 ###### 启动firefox
 
 ```shell
-root@classb-opsdevtest-in4:~# firefox
+root@xxx:~# firefox
 Xlib:  extension "RANDR" missing on display ":1".
 Xlib:  extension "RANDR" missing on display ":1".
 ```
@@ -80,11 +80,11 @@ Xlib:  extension "RANDR" missing on display ":1".
 ###### 安装运行
 
 ```shell
-root@classb-opsdevtest-in4:~# aptitude search X11VNC
+root@xxx:~# aptitude search X11VNC
 i   x11vnc                                                             - VNC server to allow remote access to an existing X session  
 
-root@classb-opsdevtest-in4:~# aptitude install x11vnc
-root@classb-opsdevtest-in4:~# x11vnc -display :1 -xkb
+root@xxx:~# aptitude install x11vnc
+root@xxx:~# x11vnc -display :1 -xkb
 ```
 
 参数解释，Display 1，就是上面Xvfb配置的1号屏幕。
