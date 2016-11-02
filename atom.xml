@@ -1,0 +1,833 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>professorLea</title>
+  
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="https://professorlea.github.io/"/>
+  <updated>2016-10-17T08:33:51.534Z</updated>
+  <id>https://professorlea.github.io/</id>
+  
+  <author>
+    <name>professorLea</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Redis practise（二）使用Docker部署Redis高可用，分布式集群</title>
+    <link href="https://professorlea.github.io/2016/08/22/Redis-practise%EF%BC%88%E4%BA%8C%EF%BC%89%E4%BD%BF%E7%94%A8Docker%E9%83%A8%E7%BD%B2Redis%E9%AB%98%E5%8F%AF%E7%94%A8%EF%BC%8C%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4/"/>
+    <id>https://professorlea.github.io/2016/08/22/Redis-practise（二）使用Docker部署Redis高可用，分布式集群/</id>
+    <published>2016-08-22T05:46:31.000Z</published>
+    <updated>2016-10-17T08:33:51.534Z</updated>
+    
+    <content type="html"><![CDATA[<h4 id="思路"><a href="#思路" class="headerlink" title="思路"></a>思路</h4><p>鉴于之间学习过的Docker一些基础知识，这次准备部署一个简单的分布式，高可用的redis集群，如下的拓扑<br><img src="tuopu.png" alt="Alt text"></p>
+<p>下面介绍下，对于这张拓扑图而言，需要了解的一些基础概念。</p>
+<h4 id="Redis持久化"><a href="#Redis持久化" class="headerlink" title="Redis持久化"></a>Redis持久化</h4><p>Redis有两种持久化策略。</p>
+<p><strong>Rdb</strong></p>
+<ul>
+<li>全量备份</li>
+<li>形成二进制文件: dump.rdb</li>
+</ul>
+<p>在使用命令 <strong>save（停写）</strong>, <strong>BgSave</strong>。或者Save配置条件触发时，开始全量持久化Rdb文件。<br>相关的Redis.conf配置有：</p>
+<ul>
+<li>dir</li>
+<li>dbfilename</li>
+<li>save（停写）<br>例如：</li>
+</ul>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">save <span class="number">900</span> <span class="number">1</span>  <span class="comment">#after 900 sec (15 min) if at least 1 key changed</span></div><div class="line">save <span class="number">300</span> <span class="number">10</span> <span class="comment">#after 300 sec (5 min) if at least 10 keys changed</span></div><div class="line">save <span class="number">60</span> <span class="number">10000</span> <span class="comment">#after 60 sec if at least 10000 keys changed</span></div><div class="line">dbfilename dump.rdb <span class="comment"># The filename where to dump the DB</span></div><div class="line">dir ./ <span class="comment"># The DB will be written inside this directory</span></div></pre></td></tr></table></figure>
+<p><strong>aof</strong></p>
+<ul>
+<li>Append only file</li>
+<li>增量备份</li>
+</ul>
+<p><strong>Redis.conf配置</strong><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">appendonly yes</div><div class="line">appendfilename &quot;appendonly.aof&quot; # The name of the append only file (default: &quot;appendonly.aof&quot;)</div></pre></td></tr></table></figure></p>
+<p>那么aof和Rdb的一些对比呢：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Col1</th>
+<th style="text-align:left">rdb</th>
+<th style="text-align:left">aof</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">性能影响</td>
+<td style="text-align:left">平时不影响性能<br>备份时性能影响较大</td>
+<td style="text-align:left">性能一直会受到影响</td>
+</tr>
+<tr>
+<td style="text-align:left">数据丢失</td>
+<td style="text-align:left">两次备份之间的增量数据会丢失</td>
+<td style="text-align:left">不会丢失数据</td>
+</tr>
+<tr>
+<td style="text-align:left">备份文件大小</td>
+<td style="text-align:left">只有数据，较小</td>
+<td style="text-align:left">除了数据还记录了数据的变化过程，较大</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>可参考 <a href="http://redis.io/topics/persistence" target="_blank" rel="external">官方文档</a></p>
+</blockquote>
+<h4 id="Redis高可用"><a href="#Redis高可用" class="headerlink" title="Redis高可用"></a>Redis高可用</h4><p>从两个角度来考虑高可用：主从复制，主从切换</p>
+<h5 id="主从复制"><a href="#主从复制" class="headerlink" title="主从复制"></a>主从复制</h5><p>可以通过命令<em>SLAVEOF</em>，来配置当前节点是某个Redis的Slave节点。参考 <a href="http://redisdoc.com/server/slaveof.html" target="_blank" rel="external">slaveof</a></p>
+<h5 id="主从切换"><a href="#主从切换" class="headerlink" title="主从切换"></a>主从切换</h5><p>使用官方的Redis-sentinel可以实现Redis的主从切换。<br>参考<a href="http://ifeve.com/redis-sentinel/" target="_blank" rel="external">Redis官方文档</a> 和 <a href="https://github.com/antirez/redis-doc/blob/master/topics/sentinel.md" target="_blank" rel="external">sentinel.md</a></p>
+<p>值得注意的是，配饰抖个Sentinel实例，他们之间是<strong>互相通信</strong>的。官方推荐：一个健康的集群部署，至少需要3个Sentinel实例。这样他们之间会通过<strong>quorum</strong>参数来执行主从切换操作ODOWN。</p>
+<ul>
+<li>SDOWN：主观离线，Sentinel发现redis挂了。</li>
+<li>ODOWN：客观离线，Sentinel根据规则投票后确定redis挂了</li>
+<li>规则为 #of SDOWN&gt;quorum</li>
+</ul>
+<p>启动Sentinel</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">redis-sentinel /path/to/sentinel.conf</div></pre></td></tr></table></figure>
+<p>在本文的例子中，Sentienl的配置文件如下所示：<br>sentinel 实例1：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">port <span class="number">26379</span></div><div class="line">daemonize yes</div><div class="line">logfile <span class="string">"/var/log/redis/sentinel_26379.log"</span></div><div class="line">sentinel monitor firstmaster <span class="number">10.165</span>.<span class="number">124.10</span> <span class="number">16379</span> <span class="number">2</span></div><div class="line">sentinel auth-pass firstmaster <span class="number">123456</span></div><div class="line">sentinel config-epoch firstmaster <span class="number">0</span></div><div class="line">sentinel leader-epoch firstmaster <span class="number">0</span></div><div class="line">sentinel monitor sencondmaster <span class="number">10.165</span>.<span class="number">124.10</span> <span class="number">16381</span> <span class="number">2</span></div><div class="line">sentinel auth-pass sencondmaster <span class="number">123456</span></div><div class="line">sentinel config-epoch sencondmaster <span class="number">0</span></div><div class="line">sentinel leader-epoch sencondmaster  <span class="number">0</span></div></pre></td></tr></table></figure>
+<p>sentinel 实例2：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">port <span class="number">26380</span></div><div class="line">daemonize yes</div><div class="line">logfile <span class="string">"/var/log/redis/sentinel_26380.log"</span></div><div class="line">sentinel monitor firstmaster <span class="number">10.165</span>.<span class="number">124.10</span> <span class="number">16379</span> <span class="number">2</span></div><div class="line">sentinel auth-pass firstmaster <span class="number">123456</span></div><div class="line">sentinel config-epoch firstmaster <span class="number">0</span></div><div class="line">sentinel leader-epoch firstmaster <span class="number">0</span></div><div class="line">sentinel monitor sencondmaster <span class="number">10.165</span>.<span class="number">124.10</span> <span class="number">16381</span> <span class="number">2</span></div><div class="line">sentinel auth-pass sencondmaster <span class="number">123456</span></div><div class="line">sentinel config-epoch sencondmaster <span class="number">0</span></div><div class="line">sentinel leader-epoch sencondmaster  <span class="number">0</span></div></pre></td></tr></table></figure>
+<p>sentinel 实例3：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">port <span class="number">26381</span></div><div class="line">daemonize yes</div><div class="line">logfile <span class="string">"/var/log/redis/sentinel_26381.log"</span></div><div class="line">sentinel monitor firstmaster <span class="number">10.165</span>.<span class="number">124.10</span> <span class="number">16379</span> <span class="number">2</span></div><div class="line">sentinel auth-pass firstmaster <span class="number">123456</span></div><div class="line">sentinel config-epoch firstmaster <span class="number">0</span></div><div class="line">sentinel leader-epoch firstmaster <span class="number">0</span></div><div class="line">sentinel monitor sencondmaster <span class="number">10.165</span>.<span class="number">124.10</span> <span class="number">16381</span> <span class="number">2</span></div><div class="line">sentinel auth-pass sencondmaster <span class="number">123456</span></div><div class="line">sentinel config-epoch sencondmaster <span class="number">0</span></div><div class="line">sentinel leader-epoch sencondmaster  <span class="number">0</span></div></pre></td></tr></table></figure>
+<p>可以看出，3个实例监控了 firstmaster及secondmaster，两个集群。<br>对于其中一个sentinel实例，看到它的信息如下：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">$ redis-cli -h  <span class="number">10.165</span>.<span class="number">124.10</span> -p <span class="number">26380</span> -a <span class="number">123456</span></div><div class="line"><span class="number">10.165</span>.<span class="number">124.10</span>:<span class="number">26380</span>&gt; info</div><div class="line"><span class="comment"># Server</span></div><div class="line">redis_version:<span class="number">2.8</span>.<span class="number">24</span></div><div class="line">redis_git_sha1:<span class="number">00000000</span></div><div class="line">redis_git_dirty:<span class="number">0</span></div><div class="line">redis_build_id:<span class="number">7</span>de005b109aa3dd5</div><div class="line">redis_mode:sentinel</div><div class="line">os:Linux <span class="number">3.16</span>.<span class="number">0</span>-<span class="number">0</span>.bpo.<span class="number">4</span>-amd64 x86_64</div><div class="line">arch_bits:<span class="number">64</span></div><div class="line">multiplexing_api:epoll</div><div class="line">gcc_version:<span class="number">4.7</span>.<span class="number">2</span></div><div class="line">process_id:<span class="number">28837</span></div><div class="line">run_id:<span class="number">630</span>dfd8f09105bc84147923319afbf1d5cebe9a5</div><div class="line">tcp_port:<span class="number">26380</span></div><div class="line">uptime_in_seconds:<span class="number">347096</span></div><div class="line">uptime_in_days:<span class="number">4</span></div><div class="line">hz:<span class="number">13</span></div><div class="line">lru_clock:<span class="number">12213499</span></div><div class="line">config_file:/etc/redis/sentinel_26380.conf</div><div class="line"></div><div class="line"><span class="comment"># Sentinel</span></div><div class="line">sentinel_masters:<span class="number">2</span></div><div class="line">sentinel_tilt:<span class="number">0</span></div><div class="line">sentinel_running_scripts:<span class="number">0</span></div><div class="line">sentinel_scripts_queue_length:<span class="number">0</span></div><div class="line">master0:name=firstmaster,status=ok,address=<span class="number">10.165</span>.<span class="number">124.10</span>:<span class="number">16379</span>,slaves=<span class="number">1</span>,sentinels=<span class="number">3</span></div><div class="line">master1:name=secondmaster,status=ok,address=<span class="number">10.165</span>.<span class="number">124.10</span>:<span class="number">16381</span>,slaves=<span class="number">1</span>,sentinels=<span class="number">3</span></div></pre></td></tr></table></figure>
+<p>最后2行可以看出监控的集群，其余2个sentinel实例也是如此。</p>
+<p>下面讲，如何在这样的集群上，通过Jedis来进行集群操作</p>
+<h5 id="JedisSentinelPool"><a href="#JedisSentinelPool" class="headerlink" title="JedisSentinelPool"></a>JedisSentinelPool</h5><p>它解决了痛点：</p>
+<ul>
+<li>不确定主redis 的ip port</li>
+<li>需要从sentinel获取</li>
+</ul>
+<p><strong>JedisSentinelPool</strong>可以直接想sentinel查询当前master的ip port，在建立连接。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="keyword">import</span> redis.clients.jedis.Jedis;</div><div class="line"><span class="keyword">import</span> redis.clients.jedis.JedisPoolConfig;</div><div class="line"><span class="keyword">import</span> redis.clients.jedis.JedisSentinelPool;</div><div class="line"></div><div class="line"><span class="keyword">import</span> java.util.HashSet;</div><div class="line"><span class="keyword">import</span> java.util.Set;</div><div class="line"></div><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JedisSentinelTest</span> </span>&#123;</div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> Set&lt;String&gt; sentinels = <span class="keyword">new</span> HashSet&lt;String&gt;();</div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> JedisPoolConfig config = <span class="keyword">new</span> JedisPoolConfig();</div><div class="line">    <span class="keyword">static</span>&#123;</div><div class="line">        config.setMaxTotal(<span class="number">100</span>);</div><div class="line">        config.setMaxIdle(<span class="number">100</span>);</div><div class="line">        config.setMaxWaitMillis(<span class="number">1000</span>);</div><div class="line">        sentinels.add(<span class="string">"10.165.124.10:26379"</span>);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> JedisSentinelPool sentinelPool = <span class="keyword">new</span> JedisSentinelPool(<span class="string">"firstmaster"</span>, sentinels, config);</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</div><div class="line">        Jedis jedis = sentinelPool.getResource();</div><div class="line">        <span class="keyword">try</span>&#123;</div><div class="line">            jedis.auth(<span class="string">"123456"</span>);</div><div class="line">            jedis.set(<span class="string">"sentinel_one"</span>, <span class="string">"sentinel_one"</span>);</div><div class="line">            System.out.println(jedis.get(<span class="string">"sentinel_one"</span>));</div><div class="line">        &#125;<span class="keyword">finally</span> &#123;</div><div class="line">            <span class="keyword">if</span> (jedis!= <span class="keyword">null</span>)&#123;</div><div class="line">                jedis.close();</div><div class="line">            &#125;</div><div class="line"></div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>从代码里可以看出，我们的Jedis链接是通过Sentinel来获取的。</p>
+<h4 id="分布式"><a href="#分布式" class="headerlink" title="分布式"></a>分布式</h4><p>解决痛点：</p>
+<ul>
+<li>用户较多数据量大，一台服务器内存不足。</li>
+<li>部署多台增加容量，但是需要考虑如何分割数据</li>
+</ul>
+<p>Redis的分布式使用的是<strong>一致性哈希</strong>算法。满足：</p>
+<ul>
+<li>分散性：避免相同的内容映射到不同节点</li>
+<li>平衡性：均匀分布，每个节点上的内容数量差不多</li>
+<li>单调性：增删节点时，不影响旧的映射。</li>
+</ul>
+<p>一致性哈希的原理如图所示：<br><img src="haxi.png" alt="Alt text"></p>
+<p>可参考：<a href="http://blog.csdn.net/cywosp/article/details/23397179" target="_blank" rel="external">中文介绍</a>，<a href="http://www.martinbroadhurst.com/Consistent-Hash-Ring.html" target="_blank" rel="external">英文介绍</a></p>
+<p>有了算法，那么数据分片在Redis中还有3种分类：</p>
+<p><strong>1，客户端分片</strong><br>使用比如ShardedJedis，Predis，Redis-rb等客户端的包，在客户端金鑫该数据分片。<br><img src="shardJedis.png" alt="Alt text"></p>
+<p>在本例中，使用ShardedJedisPool，代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SharedJedisTest</span> </span>&#123;</div><div class="line">    <span class="keyword">public</span>  <span class="keyword">static</span> JedisPoolConfig poolConfig = <span class="keyword">new</span> JedisPoolConfig();</div><div class="line">    <span class="keyword">public</span>  <span class="keyword">static</span> List&lt;JedisShardInfo&gt; shards = <span class="keyword">new</span> ArrayList&lt;JedisShardInfo&gt;();</div><div class="line">    <span class="keyword">static</span> &#123;</div><div class="line">        poolConfig.setMaxTotal(<span class="number">100</span>);</div><div class="line">        poolConfig.setMaxIdle(<span class="number">10</span>);</div><div class="line">        poolConfig.setMaxWaitMillis(<span class="number">2000</span>);</div><div class="line">        JedisShardInfo info1 = <span class="keyword">new</span> JedisShardInfo(<span class="string">"10.165.124.10"</span>,<span class="number">16379</span>);</div><div class="line">        info1.setPassword(<span class="string">"123456"</span>);</div><div class="line">        JedisShardInfo info2 = <span class="keyword">new</span> JedisShardInfo(<span class="string">"10.165.124.10"</span>,<span class="number">16381</span>);</div><div class="line">        info2.setPassword(<span class="string">"123456"</span>);</div><div class="line">        shards.add(info1);</div><div class="line">        shards.add(info2);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> ShardedJedisPool shardedJedisPool = <span class="keyword">new</span> ShardedJedisPool(poolConfig,shards);</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</div><div class="line">        ShardedJedis jedis = <span class="keyword">null</span>;</div><div class="line">        <span class="keyword">try</span> &#123;</div><div class="line">            jedis = shardedJedisPool.getResource();</div><div class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i =<span class="number">0</span>; i&lt;<span class="number">50</span>; i++)&#123;</div><div class="line">                String key = String.format(<span class="string">"key%d"</span>,i);</div><div class="line">                String value = String.format(<span class="string">"value%d"</span>,i);</div><div class="line">                jedis.set(key, value);</div><div class="line">                Client client1= jedis.getShard(key).getClient();</div><div class="line">                System.out.println(String.format((<span class="string">"%s in server: %s, and port is: %d"</span>),key,client1.getHost(),client1.getPort()));</div><div class="line">            &#125;</div><div class="line">        &#125;<span class="keyword">finally</span> &#123;</div><div class="line">            <span class="keyword">if</span> (jedis != <span class="keyword">null</span>)&#123;</div><div class="line">                jedis.close();</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>可以看出，两个Master都在一个shardedJedisPool里。但是这里有个问题就是需要维护Master的地址，所以后续如果可能，也需要开发Sentinel管理的JedisPool的插件。</p>
+<p><strong>2，代理分片</strong><br>Twemproxy, codis, onecache。如图：<br><img src="proxy.png" alt="Alt text"><br>特点：</p>
+<ul>
+<li>服务端计算分片，客户端简单</li>
+<li>客户端无需维护redis的ip</li>
+<li>Proxy会增加响应时间</li>
+</ul>
+<p><strong>3，查询路由</strong><br>Redis 3.0:Redis集群自己做好分片。<br>特点：</p>
+<ul>
+<li>无需proxy</li>
+<li>客户端可以记录下每个key对应的redis以增加性能</li>
+<li>支持3.0 的客户端还很少</li>
+</ul>
+<p>docker 镜像：<br><a href="https://hub.docker.com/r/tutum/redis/" target="_blank" rel="external">https://hub.docker.com/r/tutum/redis/</a><br><a href="https://github.com/tutumcloud/redis" target="_blank" rel="external">https://github.com/tutumcloud/redis</a></p>
+<h4 id="Redis监控统计"><a href="#Redis监控统计" class="headerlink" title="Redis监控统计"></a>Redis监控统计</h4><p><strong>Info ｛options｝</strong></p>
+<ul>
+<li>Server/Clients/Memory/Persistence/Stats/Replications/Cpu/Commandstats/Keyspaces</li>
+</ul>
+<p><strong>常用的</strong></p>
+<ul>
+<li>Memory : used_memory_human 当前使用内存量</li>
+<li>Memory : mem_fragmentation_ratio 内存碎片率</li>
+<li>Stats : instantaneous_ops_per_sec 实时的QPS</li>
+<li>Stats: expired_keys, evicted_keys, keyspace_hits, keyspace_misses 过期的key，被置换的key，命中的key数量，未命中的key数量</li>
+<li>Replication 主从连接是否正常，复制是否正常</li>
+<li>Commandstats 每个命令的执行情况</li>
+<li>Keyspaces 每个db上有多少key</li>
+</ul>
+<h4 id="彩蛋"><a href="#彩蛋" class="headerlink" title="彩蛋"></a>彩蛋</h4><h5 id="一款成功产品的架构图："><a href="#一款成功产品的架构图：" class="headerlink" title="一款成功产品的架构图："></a>一款成功产品的架构图：</h5><p>单点式： 一主多从<br><img src="single.png" alt="Alt text"></p>
+<p>分布式：</p>
+<ul>
+<li>Redis：多个Redis节点，每个节点都一主一从。</li>
+<li>Redis-sentinel: 主从探获、切换。</li>
+<li>Proxy：业务代理转发，数据分片</li>
+<li>NLB：负载均衡，Proxy去单点<br><img src="multi.png" alt="Alt text"></li>
+</ul>
+<h5 id="部署Redis的Docker-file"><a href="#部署Redis的Docker-file" class="headerlink" title="部署Redis的Docker file"></a>部署Redis的Docker file</h5><figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">FROM</span> tutum/redis:latest</div><div class="line"></div><div class="line"><span class="comment"># redis configuration</span></div><div class="line"><span class="keyword">ENV</span> REDIS_PASS <span class="string">"123456"</span></div><div class="line"><span class="keyword">ENV</span> REDIS_MAXMEMORY_POLICY=<span class="string">"allkeys-lru"</span></div><div class="line"><span class="keyword">ENV</span> REDIS_MAXMEMORY=<span class="string">"10mb"</span></div><div class="line"><span class="keyword">ENV</span> REDIS_DATABASES=<span class="string">"2"</span></div><div class="line"><span class="keyword">ENV</span> REDIS_APPENDONLY=<span class="string">"yes"</span></div><div class="line"><span class="keyword">ENV</span> REDIS_APPENDFSYNC=everysec</div></pre></td></tr></table></figure>
+<p><strong>启动容器：</strong><br>集群1：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">docker run -d --name master1 -p <span class="number">16379</span>:<span class="number">6379</span> test/redis</div><div class="line">docker run -d --name slave1 -p <span class="number">16380</span>:<span class="number">6379</span> -e -e REDIS_MASTERAUTH=<span class="string">"123456"</span> test/redis</div></pre></td></tr></table></figure>
+<p>集群2：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">docker run -d --name master2 -p <span class="number">16381</span>:<span class="number">6379</span> test/redis</div><div class="line">docker run -d --name slave2 -p <span class="number">16382</span>:<span class="number">6379</span> -e REDIS_MASTERAUTH=<span class="string">"123456"</span> test/redis</div></pre></td></tr></table></figure>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h4 id=&quot;思路&quot;&gt;&lt;a href=&quot;#思路&quot; class=&quot;headerlink&quot; title=&quot;思路&quot;&gt;&lt;/a&gt;思路&lt;/h4&gt;&lt;p&gt;鉴于之间学习过的Docker一些基础知识，这次准备部署一个简单的分布式，高可用的redis集群，如下的拓扑&lt;br&gt;&lt;img src=&quot;tuo
+    
+    </summary>
+    
+      <category term="Redis" scheme="https://professorlea.github.io/categories/Redis/"/>
+    
+    
+      <category term="Redis" scheme="https://professorlea.github.io/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Redis practice（一）基础篇</title>
+    <link href="https://professorlea.github.io/2016/08/22/Redis-practice%EF%BC%88%E4%B8%80%EF%BC%89%E5%9F%BA%E7%A1%80%E7%AF%87/"/>
+    <id>https://professorlea.github.io/2016/08/22/Redis-practice（一）基础篇/</id>
+    <published>2016-08-22T05:42:33.000Z</published>
+    <updated>2016-10-17T08:33:51.531Z</updated>
+    
+    <content type="html"><![CDATA[<h4 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h4><blockquote>
+<p>先罗列一下缓存的基本概念。</p>
+</blockquote>
+<p><strong>所有类型的缓存：</strong></p>
+<ul>
+<li>L1 L2: CPU缓存（Cache Memory）是位于CPU与内存之间的临时存储器，它的容量比内存小的多但是交换速度却比内存要快得多</li>
+<li>DB cache(mysql query cache)</li>
+<li>Brower</li>
+<li>CDN</li>
+<li>Mobile image cache</li>
+</ul>
+<p><strong>那些数据适合缓存：</strong></p>
+<ul>
+<li>热点数据：top10，秒杀</li>
+<li>中间结果：比如哨兵的报警表达式触发次数，这次次数需要累计起来，存入数据库似乎没有意义</li>
+<li>预计算结果：计数、总量、max avg等统计结果。</li>
+</ul>
+<p><strong>常用的缓存框架</strong></p>
+<ul>
+<li>Ehcache: “JAVA’S MOST WIDELY-USED CACHE”，rmi协议支持jvm间数据同步问题</li>
+<li>Spring cache ：spring 给出的 缓存抽象，不是具体实现<br>这些都属于本地缓存，Ehcache可以满足JVM间数据同步的问题。具体实现可以用spring cache + echcache</li>
+</ul>
+<p><strong>常用的缓存数据库</strong></p>
+<ul>
+<li>Map，虽然听起来有点土，但是属于程序猿做本地缓存的一种办法</li>
+<li>Redis</li>
+<li>MemCached</li>
+</ul>
+<p>那么离不开这两者的比较：<br><strong>Redis vs MemCached</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">item</th>
+<th style="text-align:center">Redis</th>
+<th style="text-align:center">MemCached</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">高可用</td>
+<td style="text-align:center">支持</td>
+<td style="text-align:center">自己实现</td>
+</tr>
+<tr>
+<td style="text-align:center">持久化</td>
+<td style="text-align:center">支持</td>
+<td style="text-align:center">不支持</td>
+</tr>
+<tr>
+<td style="text-align:center">数据类型</td>
+<td style="text-align:center">5种类型</td>
+<td style="text-align:center">String类型</td>
+</tr>
+<tr>
+<td style="text-align:center">线程</td>
+<td style="text-align:center">单线程</td>
+<td style="text-align:center">多线程</td>
+</tr>
+<tr>
+<td style="text-align:center">事务</td>
+<td style="text-align:center">支持</td>
+<td style="text-align:center">使用CAS命令支持</td>
+</tr>
+</tbody>
+</table>
+<p>还有以下特点：</p>
+<ul>
+<li>Both fast enough</li>
+<li>Memcached is suitable for small and static data</li>
+<li>Redis is preferable for structured data</li>
+<li>Data can be persisted in Redis</li>
+<li>If only one can be choosed, Redis is a better choice ^_^</li>
+</ul>
+<p><strong>Redis属于缓存数据库</strong></p>
+<p><strong>应用</strong></p>
+<ul>
+<li>业务层缓存 (spring cache)</li>
+<li>持久层缓存 (Mybatis的二级缓存)</li>
+<li>数据层缓存  (eg:mysql query cache)</li>
+</ul>
+<p><strong>架构</strong></p>
+<ul>
+<li>本地缓存 Map Ehcache</li>
+<li>分布式缓存 JBossCache</li>
+<li>集中式缓存 memcached redis</li>
+</ul>
+<h4 id="Redis安装及配置文件，及启动"><a href="#Redis安装及配置文件，及启动" class="headerlink" title="Redis安装及配置文件，及启动"></a>Redis安装及配置文件，及启动</h4><p>安装的话就不用赘述了，从官方下一个tar包，比如<a href="http://download.redis.io/releases/redis-2.8.24.tar.gz" target="_blank" rel="external">http://download.redis.io/releases/redis-2.8.24.tar.gz</a><br>解压make，make install即可</p>
+<p><strong>Redis.conf</strong><br>基本配置</p>
+<ul>
+<li>pidfile 记录redis-server的pid文件路径</li>
+<li>port Redis-server的监听端口</li>
+<li>daemonize Redis-server配置成守护进程</li>
+<li>loglevel  Redis-server的日志级别（warning， notice，verbose，debug）</li>
+<li>logfile 日志文件路径</li>
+<li>requirepass 密码</li>
+<li>maxmemory  Redis能使用的最大内存量</li>
+<li>maxmemory-policy 内存用完后的置换策略<ul>
+<li>volatile-lru：设置了过期时间的key中，删除最近最少用的key</li>
+<li>allkeys-lru：所有的key中，删除最近最少用的key</li>
+<li>noeviction：不置换，直接返回OOM错误</li>
+<li>其他。</li>
+</ul>
+</li>
+<li>databases 与mysql类似，一个redis实例中可以分多个库<ul>
+<li>相同的库key是唯一的，不同的库key可以复用</li>
+<li>此配置项配置redis中库的个数</li>
+</ul>
+</li>
+</ul>
+<p>还有一些其他比如持久化和高可用的配置，另外一篇进阶篇会介绍。<br>更详细的文档，请参考官方：<a href="http://download.redis.io/redis-stable/redis.conf" target="_blank" rel="external">详细配置</a></p>
+<p>服务器端启动：<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">redis-server redis.conf</div></pre></td></tr></table></figure></p>
+<p>客户端访问：<br><figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">redis-cli -h host -p port -a auth</div></pre></td></tr></table></figure></p>
+<h4 id="Redis常用数据类型"><a href="#Redis常用数据类型" class="headerlink" title="Redis常用数据类型"></a>Redis常用数据类型</h4><blockquote>
+<p>Tips: <a href="http://doc.redisfans.com" target="_blank" rel="external">命令大全</a>，<a href="http://try.redis.io/" target="_blank" rel="external">试用网站</a></p>
+</blockquote>
+<h5 id="String类型"><a href="#String类型" class="headerlink" title="String类型"></a>String类型</h5><p><strong>格式：</strong>“key” : “value”<br><strong>常用命令：</strong></p>
+<ul>
+<li>set key value</li>
+<li>get key</li>
+<li>del key</li>
+<li>incr/decr key</li>
+<li>setex key seconds value</li>
+</ul>
+<h5 id="List"><a href="#List" class="headerlink" title="List"></a>List</h5><p><strong>格式：</strong>类似于JAVA的List类型，”key”:[“value1”,”value2”]<br><strong>常用命令：</strong></p>
+<ul>
+<li>lpush key value1 value2 …</li>
+<li>lrange key start end</li>
+<li>lrem count value</li>
+<li>lindex key index</li>
+<li>llen key</li>
+</ul>
+<h5 id="Hash"><a href="#Hash" class="headerlink" title="Hash"></a>Hash</h5><p><strong>格式：</strong>类似于Java中的Map类型，”key”:{“field1”:”value1”, “field2”:value2,…}<br><strong>常用命令：</strong></p>
+<ul>
+<li>hset key field value</li>
+<li>hget key field</li>
+<li>hdel key field1 field2…</li>
+<li>hkeys key</li>
+<li>hvals key</li>
+</ul>
+<h5 id="Set"><a href="#Set" class="headerlink" title="Set"></a>Set</h5><p><strong>格式：</strong>类似于Java中的set类型。”key”:{“member1”,”member2”,…}<br><strong>常用命令：</strong></p>
+<ul>
+<li>sadd key member1 member2 …</li>
+<li>srem key member1 member2 …</li>
+<li>smembers</li>
+<li>scard key</li>
+<li>sinter key1 key2</li>
+<li>sunion key1 key2</li>
+</ul>
+<h5 id="Sorted-Set"><a href="#Sorted-Set" class="headerlink" title="Sorted Set"></a>Sorted Set</h5><p><strong>格式：</strong> “key”: {(“score1”,”memeber1”, (“score2”,”memeber2”)…)<br><strong>常用命令：</strong></p>
+<ul>
+<li>zadd key score member</li>
+<li>zrem key member</li>
+<li>zrangebyscore key min max (withscores)</li>
+<li>zcard key</li>
+</ul>
+<h5 id="其他常用命令"><a href="#其他常用命令" class="headerlink" title="其他常用命令"></a>其他常用命令</h5><ul>
+<li><strong>Keys + 匹配条件:</strong>  keys * ： 返回所有key</li>
+<li><strong>expire key seconds:</strong>  设置key的过期时间</li>
+<li><strong>ttl key:</strong>  查询key的过期时间</li>
+<li><strong>type key:</strong> 查询key的类型</li>
+<li><strong>exists key:</strong> 检查key是否存在</li>
+<li><strong>Publish/subcribe:</strong><ul>
+<li>发布一个推送频道以及订阅一个推送频道</li>
+<li>推送端和接收端均连上同一个redis</li>
+<li>Subscribe + channel1 + channel2</li>
+<li>Publish channel1 “hello world”</li>
+<li>类似于MQ</li>
+</ul>
+</li>
+<li>Multi/exec/discard<ul>
+<li>事务</li>
+<li>要么全成功，要么全回滚</li>
+</ul>
+</li>
+</ul>
+<h4 id="常用的客户端"><a href="#常用的客户端" class="headerlink" title="常用的客户端"></a>常用的客户端</h4><h5 id="Linux"><a href="#Linux" class="headerlink" title="Linux"></a>Linux</h5><p>Redis-cli：安装后自带</p>
+<h5 id="Windows"><a href="#Windows" class="headerlink" title="Windows"></a>Windows</h5><p><a href="https://redisdesktop.com/" target="_blank" rel="external">Redis destop manger</a></p>
+<h4 id="支持的编程语言"><a href="#支持的编程语言" class="headerlink" title="支持的编程语言"></a>支持的编程语言</h4><h5 id="JAVA"><a href="#JAVA" class="headerlink" title="JAVA"></a>JAVA</h5><p><strong>Jedis</strong><br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SharedJedisTest</span> </span>&#123;</div><div class="line">    <span class="keyword">public</span>  <span class="keyword">static</span> JedisPoolConfig poolConfig = <span class="keyword">new</span> JedisPoolConfig();</div><div class="line">    <span class="keyword">public</span>  <span class="keyword">static</span> List&lt;JedisShardInfo&gt; shards = <span class="keyword">new</span> ArrayList&lt;JedisShardInfo&gt;();</div><div class="line">    <span class="keyword">static</span> &#123;</div><div class="line">        poolConfig.setMaxTotal(<span class="number">100</span>);</div><div class="line">        poolConfig.setMaxIdle(<span class="number">10</span>);</div><div class="line">        poolConfig.setMaxWaitMillis(<span class="number">2000</span>);</div><div class="line">        JedisShardInfo info1 = <span class="keyword">new</span> JedisShardInfo(<span class="string">"10.165.124.10"</span>,<span class="number">16379</span>);</div><div class="line">        info1.setPassword(<span class="string">"123456"</span>);</div><div class="line">        JedisShardInfo info2 = <span class="keyword">new</span> JedisShardInfo(<span class="string">"10.165.124.10"</span>,<span class="number">16381</span>);</div><div class="line">        info2.setPassword(<span class="string">"123456"</span>);</div><div class="line">        shards.add(info1);</div><div class="line">        shards.add(info2);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">public</span> <span class="keyword">static</span> ShardedJedisPool shardedJedisPool = <span class="keyword">new</span> ShardedJedisPool(poolConfig,shards);</div><div class="line"></div><div class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span></span>&#123;</div><div class="line">        ShardedJedis jedis = <span class="keyword">null</span>;</div><div class="line">        <span class="keyword">try</span> &#123;</div><div class="line">            jedis = shardedJedisPool.getResource();</div><div class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i =<span class="number">0</span>; i&lt;<span class="number">50</span>; i++)&#123;</div><div class="line">                String key = String.format(<span class="string">"key%d"</span>,i);</div><div class="line">                String value = String.format(<span class="string">"value%d"</span>,i);</div><div class="line">                jedis.set(key, value);</div><div class="line">                Client client1= jedis.getShard(key).getClient();</div><div class="line">                System.out.println(String.format((<span class="string">"%s in server: %s, and port is: %d"</span>),key,client1.getHost(),client1.getPort()));</div><div class="line">            &#125;</div><div class="line">        &#125;<span class="keyword">finally</span> &#123;</div><div class="line">            <span class="keyword">if</span> (jedis != <span class="keyword">null</span>)&#123;</div><div class="line">                jedis.close();</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h5 id="Python"><a href="#Python" class="headerlink" title="Python"></a>Python</h5><p><strong>pip install redis</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">import</span> redis</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">addString</span><span class="params">()</span>:</span></div><div class="line">    redis_cli.set(<span class="string">'string'</span>, <span class="string">'value1'</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.get(<span class="string">'string'</span>)</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">addList</span><span class="params">()</span>:</span></div><div class="line">    redis_cli.lpush(<span class="string">'list'</span>, <span class="string">'value1'</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.lrange(<span class="string">'list'</span>, <span class="number">0</span>, <span class="number">-1</span>)</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">addHash</span><span class="params">()</span>:</span></div><div class="line">    redis_cli.hmset(<span class="string">'hash'</span>, &#123;<span class="string">'field1'</span>: <span class="string">'value1'</span>, <span class="string">'field2'</span>: <span class="string">'value2'</span>, <span class="string">'field3'</span>: <span class="string">'value3'</span>&#125;)</div><div class="line">    <span class="keyword">print</span> redis_cli.hmget(<span class="string">'hash'</span>, <span class="string">'field1'</span>, <span class="string">'field3'</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.hkeys(<span class="string">'hash'</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.hvals(<span class="string">'hash'</span>)</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">addSet</span><span class="params">()</span>:</span></div><div class="line">    redis_cli.sadd(<span class="string">'set'</span>, &#123;<span class="string">'member1'</span>: <span class="string">'value1'</span>, <span class="string">'member2'</span>: <span class="string">'value2'</span>, <span class="string">'member3'</span>: <span class="string">'value3'</span>&#125;)</div><div class="line">    redis_cli.sadd(<span class="string">'set'</span>, <span class="string">'member4'</span>, <span class="string">'member5'</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.smembers(<span class="string">'set'</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.scard(<span class="string">'set'</span>)</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">addSortedSet</span><span class="params">()</span>:</span></div><div class="line">    redis_cli.zadd(<span class="string">'SortedSet'</span>, memeber1=<span class="number">100</span>, memeber2=<span class="number">80</span>, memeber3=<span class="number">60</span>, memeber4=<span class="number">30</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.zcount(<span class="string">'SortedSet'</span>, min=<span class="number">20</span>, max=<span class="number">90</span>)</div><div class="line">    <span class="keyword">print</span> redis_cli.zrangebyscore(<span class="string">'SortedSet'</span>, min=<span class="number">0</span>, max=<span class="number">90</span>)</div><div class="line"></div><div class="line"></div><div class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</div><div class="line">    redis_cli = redis.Redis(host=<span class="string">'10.165.124.10'</span>, port=<span class="number">16379</span>, db=<span class="number">0</span>, password=<span class="string">'123456'</span>)</div><div class="line">    redis_cli_db1 = redis.Redis(host=<span class="string">'10.165.124.10'</span>, port=<span class="number">16379</span>, db=<span class="number">1</span>, password=<span class="string">'123456'</span>)</div><div class="line"></div><div class="line">    <span class="comment"># base opeartion for String List Set Hash SortedSet</span></div><div class="line">    <span class="comment"># addString()</span></div><div class="line">    <span class="comment"># addList()</span></div><div class="line">    <span class="comment"># addHash()</span></div><div class="line">    <span class="comment"># addSet()</span></div><div class="line">    <span class="comment"># addSortedSet()</span></div><div class="line"></div><div class="line">    <span class="comment"># use pipeline 大量写入</span></div><div class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> range(<span class="number">13000</span>, <span class="number">13050</span>):</div><div class="line">        string_key = <span class="string">'stringkey'</span> + str(i)</div><div class="line">        list_key = <span class="string">'listkey'</span> + str(i)</div><div class="line">        set_key = <span class="string">'setkey'</span> + str(i)</div><div class="line">        hash_key = <span class="string">'hashey'</span> + str(i)</div><div class="line">        z_key = <span class="string">'zkey'</span> + str(i)</div><div class="line"></div><div class="line">        <span class="keyword">print</span> <span class="string">"========= add keys starts ========"</span></div><div class="line"></div><div class="line">        redis_cli_db1.set(string_key, <span class="string">'string value1'</span>)</div><div class="line">        <span class="keyword">print</span> (<span class="string">"add string key %s, value %s"</span>, string_key, redis_cli_db1.get(string_key))</div><div class="line"></div><div class="line">        redis_cli_db1.rpush(list_key, <span class="string">'list value1'</span>,<span class="string">'list value2'</span>, <span class="string">'list value3'</span>)</div><div class="line">        <span class="keyword">print</span> (<span class="string">"add list key %s, value %s"</span>, list_key, redis_cli_db1.lrange(list_key, start=<span class="number">0</span>, end=<span class="number">-1</span>))</div><div class="line"></div><div class="line">        redis_cli_db1.sadd(set_key, <span class="string">'member1'</span>, <span class="string">'member2'</span>, &#123;<span class="string">'member1'</span>: <span class="string">'value1'</span>, <span class="string">'member3'</span>: <span class="string">'value3'</span>&#125;)</div><div class="line">        print(<span class="string">"add set key %s, value %s"</span>, set_key, redis_cli_db1.smembers(set_key))</div><div class="line"></div><div class="line">        redis_cli_db1.hmset(hash_key, &#123;<span class="string">'field1'</span>: <span class="string">'value1'</span>, <span class="string">'field2'</span>: <span class="string">'value2'</span>, <span class="string">'field3'</span>: <span class="string">'value3'</span>&#125;)</div><div class="line">        print(<span class="string">"add hash key %s, keys = %s values = %s"</span>, \</div><div class="line">              hash_key, redis_cli_db1.hkeys(hash_key), redis_cli_db1.hvals(hash_key))</div><div class="line"></div><div class="line">        redis_cli_db1.zadd(z_key, memeber1=<span class="number">100</span>, memeber2=<span class="number">80</span>, memeber3=<span class="number">60</span>, memeber4=<span class="number">30</span>)</div><div class="line">        print(<span class="string">"add sorted key %s, keys = %s values = %s"</span>, \</div><div class="line">              z_key, redis_cli_db1.zremrangebyscore(z_key, min=<span class="number">0</span>, max=<span class="number">90</span>))</div></pre></td></tr></table></figure>
+<h4 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h4><ul>
+<li><strong>Ruby：</strong>Redis-rb</li>
+<li><strong>PHP:</strong> phpredis</li>
+<li><strong>C++:</strong>hiredis.h</li>
+</ul>
+<h4 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h4><ul>
+<li><strong><a href="http://redis.io/" target="_blank" rel="external">Redis官网</a></strong></li>
+<li><strong><a href="http://doc.redisfans.com/index.html" target="_blank" rel="external">命令大全</a></strong></li>
+<li><strong><a href="https://github.com/antirez/redis/issues" target="_blank" rel="external">Github讨论区</a></strong></li>
+<li><strong>书籍：</strong> <em>Redis in Action</em></li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h4 id=&quot;引言&quot;&gt;&lt;a href=&quot;#引言&quot; class=&quot;headerlink&quot; title=&quot;引言&quot;&gt;&lt;/a&gt;引言&lt;/h4&gt;&lt;blockquote&gt;
+&lt;p&gt;先罗列一下缓存的基本概念。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;strong&gt;所有类型的缓存：&lt;/stro
+    
+    </summary>
+    
+      <category term="Redis" scheme="https://professorlea.github.io/categories/Redis/"/>
+    
+    
+      <category term="Redis" scheme="https://professorlea.github.io/tags/Redis/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Think as developer,从深入理解业务实现框架开始</title>
+    <link href="https://professorlea.github.io/2016/08/12/Think-as-developer-%E4%BB%8E%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E4%B8%9A%E5%8A%A1%E5%AE%9E%E7%8E%B0%E6%A1%86%E6%9E%B6%E5%BC%80%E5%A7%8B/"/>
+    <id>https://professorlea.github.io/2016/08/12/Think-as-developer-从深入理解业务实现框架开始/</id>
+    <published>2016-08-12T03:30:47.000Z</published>
+    <updated>2016-11-02T09:41:42.265Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h3><p>这篇文章主要介绍笔者从经历过的项目中，看到自己或者项目组QA在产品迭代中的软肋。认为可以通过另外一种思路来改善这些弱点。希望能够有助于QA最大化的做好质量保障工作。</p>
+<h3 id="1，产品迭代中QA自身的Bug（软肋）是什么？"><a href="#1，产品迭代中QA自身的Bug（软肋）是什么？" class="headerlink" title="1，产品迭代中QA自身的Bug（软肋）是什么？"></a>1，产品迭代中QA自身的Bug（软肋）是什么？</h3><h4 id="1-1-需求偏于口头传述"><a href="#1-1-需求偏于口头传述" class="headerlink" title="1.1 需求偏于口头传述"></a>1.1 需求偏于口头传述</h4><p>产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的测试流程之外，我们需要想一些新的办法。</p>
+<h4 id="1-2-需求和实现衔接不能达到无缝连接"><a href="#1-2-需求和实现衔接不能达到无缝连接" class="headerlink" title="1.2 需求和实现衔接不能达到无缝连接"></a>1.2 需求和实现衔接不能达到无缝连接</h4><p>测试的起点是明确测试的需求，然而有些很具体的问题，需要帮助开发定位问题的时候，需求只定义了一些比较粗的业务目标，然而具体实现由开发掌握。这里的衔接过程，QA是袖手旁观呢，还是参与其中。笔者认为后者可能可以更深入的接近实现，达到最大化的质量保障。 </p>
+<p>是时候开拓一种新思路了。<strong>Think as developer</strong>，从阅读并深入理解业务实现框架开始吧。即使代码并不是出自QA手，用到的开源或者内部框架并不熟悉，那么也要尝试开始跳出QA的舒适区，开始更贴合的去理解业务逻辑及代码实现细节。这个过程，QA要重新定位自己，重新定位质量保障的核心竞争力。</p>
+<h3 id="2，在项目中的具体实践"><a href="#2，在项目中的具体实践" class="headerlink" title="2，在项目中的具体实践"></a>2，在项目中的具体实践</h3><p>有了<strong>Think as developer</strong>这样的思路，那么如何具体到 <strong>Do as developer</strong>？笔者在下面2个项目中进行了实践：</p>
+<ul>
+<li>某运维监控系统<em>Web</em>、<em>API</em>及<em>Task</em>模块源码阅读</li>
+<li>某智能语音项目<em>Java</em>层源码阅读</li>
+</ul>
+<blockquote>
+<p>鉴于目前接触到的大多PC端的项目，大多是<em>war</em>包形式走的<em>Tomcat</em>。所以这篇文章主要是面向这类产品的一些阅读方法和技巧总结进行的一些实践活动。</p>
+</blockquote>
+<p>也提炼出来了下面3个具体的阅读技巧，可以更快速有效的作为理解业务实现框架的切入点：</p>
+<ul>
+<li><a href="#jump1"><strong>一个Web项目的容器启动的入口是什么？</strong></a></li>
+<li><a href="#jump2"><strong>深入Spring MVC + Mybatis的一些成熟的工程架构如何配置？</strong></a></li>
+<li><a href="#jump3"><strong>Spring 和SpringMVC是两件事</strong></a></li>
+</ul>
+<p>下面的篇幅，来具体谈谈这3个阅读技巧。</p>
+<h4 id="2-1，一个Web项目的容器启动的入口是什么？"><a href="#2-1，一个Web项目的容器启动的入口是什么？" class="headerlink" title="2.1，一个Web项目的容器启动的入口是什么？"></a><span id="jump1">2.1，一个Web项目的容器启动的入口是什么？</span></h4><p>记得最早的时候开始研究<em>Java Web</em>的时候，记得看到一个人写的一句话：<br>“初学 <em>Java Web</em> 开发，请远离各种框架，从 <em>Servlet</em> 开发” </p>
+<blockquote>
+<p><a href="http://www.oschina.net/question/12_52027" target="_blank" rel="external">初学 Java Web 开发，请远离各种框架，从 Servlet 开发</a></p>
+</blockquote>
+<p><em>Java Web</em>开发离不开<em>Servlet</em>，<em>Servlet</em>的生命周期是有Tomcat/Jetty这样的Web容器接管，那么<code>web.xml</code>就是所有开始的入口。这里会配置<em>Servlet</em>，<em>Filter</em>这样的组件。</p>
+<p><strong>Servlet</strong>：通过<em>doGet doPost</em>方法处理请求，这个方法里有传统的两个入参：<em>HttpServletRequest，HttpServletResponse</em>来分别处理请求和响应。</p>
+<p><strong>Filter</strong>：在请求被容器发到servlet之前，会先经过配置的<em>filter</em>。所以一般情况下，<em>filter</em>都是做一些白名单验证，特定的<em>uri</em>要通过<em>openid</em>，<em>doFilter</em>方法在做。<br>这个时候<code>web.xml</code>里应该会有很多<code>&lt;servlet&gt;</code>和<code>&lt;filter&gt;</code>标签，杂乱无章</p>
+<p>加入的<em>SpringMVC</em>框架后，<code>web.xml</code>就变得简化无比（只是web.xml），需要关注的有下面这些：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">&lt;context-param&gt;</div><div class="line">    &lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;</div><div class="line">    &lt;param-value&gt;</div><div class="line">    classpath:spring-context-web.xml</div><div class="line">&lt;/param-value&gt;</div><div class="line">&lt;/context-param&gt;</div><div class="line"></div><div class="line">&lt;listener&gt;</div><div class="line">    &lt;listener-class&gt;org.springframework.web.context.ContextLoaderListener&lt;/listener-class&gt;</div><div class="line">&lt;/listener&gt;</div></pre></td></tr></table></figure>
+<p>以及<em>Servlet</em>的配置：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&lt;servlet&gt;</div><div class="line">    &lt;servlet-name&gt;sentry&lt;/servlet-name&gt;</div><div class="line">    &lt;servlet-class&gt;org.springframework.web.servlet.DispatcherServlet&lt;/servlet-class&gt;</div><div class="line">    &lt;init-param&gt;</div><div class="line">        &lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;</div><div class="line">        &lt;param-value&gt;classpath:spring-mvc-config.xml&lt;/param-value&gt;</div><div class="line">    &lt;/init-param&gt;</div><div class="line">    &lt;load-on-startup&gt;1&lt;/load-on-startup&gt;</div><div class="line">&lt;/servlet&gt;</div></pre></td></tr></table></figure>
+<p>又出来了两个配置文件：<em>spring-context-web.xml</em> &amp; <em>spring-mvc-config.xml</em><br>一个是通用上下文，一个是初始化<em>MVC</em>上下文。如下图<br> <img src="./1.png" alt="Alt text"></p>
+<p>那么各有什么用处：</p>
+<ul>
+<li><strong><em>ContextLoaderListener</em></strong>初始化的上下文加载的<em>Bean</em>是对于整个应用程序共享的，不管是使用什么表现层技术，一般如<em>DAO</em>层、<em>Service</em>层Bean；</li>
+<li><strong><em>DispatcherServlet</em></strong>初始化的上下文加载的<em>Bean</em>是只对<em>Spring Web MVC</em>有效的<em>Bean</em>，如<em>Controller</em>、<em>HandlerMapping</em>、<em>HandlerAdapter</em>等等，该初始化上下文应该只加载<em>Web</em>相关组件。</li>
+</ul>
+<p>这里就可以大致知道，之前所有<code>&lt;servlet&gt;</code>需要做的事情，都被<em>Spring</em>的<em>Dispatcher servlet</em>统一接管，可以理解为一个虚拟的路由器，将请求转发给所有的<code>@Controller</code>。</p>
+<p>这里碰见过一个事情：我有个外部的服务需要初始化，初始化如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;bean id="qaService" class="com.xxx.utils.qa.qaServiceImpl"&gt;</div><div class="line">    &lt;constructor-arg index="0" value="$&#123;baseURL&#125;" /&gt;</div><div class="line">    &lt;constructor-arg index="1" value="$&#123;token&#125;" /&gt;</div><div class="line">&lt;/bean&gt;</div></pre></td></tr></table></figure>
+<p>我用它的地方是在一个<em>Controller</em>里面，然而放在<em>spring-mvc-config.xml</em>就编译失败，说找不到这个<em>Bean</em>。放在<em>spring-context-web.xml</em>就可以。</p>
+<h4 id="2-2，深入Spring-MVC-Mybatis的一些成熟的工程架构如何配置？"><a href="#2-2，深入Spring-MVC-Mybatis的一些成熟的工程架构如何配置？" class="headerlink" title="2.2，深入Spring MVC + Mybatis的一些成熟的工程架构如何配置？"></a><span id="jump2">2.2，深入Spring MVC + Mybatis的一些成熟的工程架构如何配置？</span></h4><p>你的项目目录应该是这样的：</p>
+<ul>
+<li><strong>/main/</strong>：<br><em>controller</em>层，<em>service</em>层及<em>DAO</em>层，以及<em>filter</em>：</li>
+</ul>
+<p><img src="./2.png" alt="Alt text"></p>
+<ul>
+<li><strong>/Resources</strong>：<br>使用<em>MyBatis</em>的话，这些<em>mapper</em>文件放在这里，并使用和<em>DAO</em>层一样的包名。<br>然后根据不同的开发，测试，线上环境放入不同的配置文件。<br><img src="./3.png" alt="Alt text"></li>
+</ul>
+<p>至于配置文件如何读取，一方面<em>Maven</em>编译打包的时候<em>resource</em>目录下的文件都会拷贝出来。另外一方面，区分环境变量，在<code>pom.xml</code>的<code>&lt;profile&gt;</code>配置即可，然后通过<em>mvn</em>的 -P参数来区分，如图：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div></pre></td><td class="code"><pre><div class="line">&lt;profile&gt;</div><div class="line">    &lt;id&gt;dev&lt;/id&gt;</div><div class="line">    &lt;activation&gt;</div><div class="line">        &lt;activeByDefault&gt;true&lt;/activeByDefault&gt;</div><div class="line">    &lt;/activation&gt;</div><div class="line">    &lt;build&gt;</div><div class="line">        &lt;resources&gt;</div><div class="line">            &lt;resource&gt;</div><div class="line">                &lt;directory&gt;src/main/resources/dev&lt;/directory&gt;</div><div class="line">            &lt;/resource&gt;</div><div class="line">            &lt;resource&gt;</div><div class="line">                &lt;directory&gt;src/main/resources/common&lt;/directory&gt;</div><div class="line">            &lt;/resource&gt;</div><div class="line">        &lt;/resources&gt;</div><div class="line">    &lt;/build&gt;</div><div class="line">&lt;/profile&gt;</div><div class="line">&lt;profile&gt;</div><div class="line">    &lt;id&gt;test&lt;/id&gt;</div><div class="line">    /* 同上 */</div><div class="line">    &lt;directory&gt;src/main/resources/test&lt;/directory&gt;</div><div class="line">&lt;/profile&gt;</div><div class="line">&lt;profile&gt;</div><div class="line">    &lt;id&gt;online&lt;/id&gt;</div><div class="line">    ...</div><div class="line">    &lt;directory&gt;src/main/resources/online&lt;/directory&gt;</div><div class="line">    ...</div><div class="line">    /* 同上 */</div><div class="line">&lt;/profile&gt;</div></pre></td></tr></table></figure>
+<ul>
+<li><strong>请求如何到达Controller</strong></li>
+</ul>
+<p>这里有个关键注释：<code>&lt;mvc:annotation-driven/&gt;</code><br>因为之前肯定是通过<code>&lt;context:component-scan/&gt;</code>扫描过所有的<em>Controller</em>，但是他们只是<em>Bean</em>被构造，需要通过<code>&lt;mvc:annotation-driven/&gt;</code>标签告诉<em>SpringMVC</em>，请求的处理者。</p>
+<blockquote>
+<p>出处：<a href="http://stackoverflow.com/questions/13661985/spring-mvc-difference-between-contextcomponent-scan-and-annotation-driven" target="_blank" rel="external">spring-mvc-difference-between-contextcomponent-scan-and-annotation-driven</a></p>
+</blockquote>
+<ul>
+<li><strong>请求返回</strong>：<em>FTL</em>返回及<em>JSON</em>返回</li>
+</ul>
+<p>这里要在<em>spring_mvc_config.xml</em>中配置一个<em>bean</em>：<strong><em>ContentNegotiatingViewResolver</em></strong>，有两个属性：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&lt;property name=<span class="string">"defaultContentType"</span> value=<span class="string">"application/json"</span> /&gt;</div><div class="line">.....</div><div class="line">&lt;property name=<span class="string">"viewResolvers"</span>&gt;</div><div class="line">.....</div><div class="line">&lt;property name=<span class="string">"defaultViews"</span>&gt;</div></pre></td></tr></table></figure>
+<p>这两个<em>resolver</em>的好处在于：<em>Controller</em>的函数处理，返回<em>String</em>就默认是<em>FTL</em>的路径（也就是前端的路径），返回<em>void</em>，就是<em>json</em>。不需要<code>@RequestBody</code>注解。</p>
+<ul>
+<li><strong><em>Controller</em> 怎么看，怎么写</strong></li>
+</ul>
+<p>了解一些关键注释的意思，比如<code>@RequestMapping</code>， <code>@RequestParam</code>,  <code>@RequestHeader</code> ，<code>@PathVariable</code>， 至于<code>ResponseBody</code>，经过上面的讲解，应该就不需用了。别的话，多看代码，多实践，不缺这样的资料。</p>
+<ul>
+<li><strong>前端的配置</strong></li>
+</ul>
+<p>前端这里有两个关键配置：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;mvc:resources mapping=<span class="string">"/views/**"</span> location=<span class="string">"/views/"</span>/&gt;`</div><div class="line">&lt;bean</div><div class="line">            <span class="class"><span class="keyword">class</span></span>=<span class="string">"org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer"</span>&gt;</div><div class="line">        &lt;property name=<span class="string">"templateLoaderPath"</span> value=<span class="string">"/views"</span>/&gt;`</div></pre></td></tr></table></figure>
+<p>因为<em>Servlet</em>被<em>Spring</em>整体接管之后，所有的请求都被接管。那么静态文件呢？他们又没有<em>Controller</em>的处理，肯定会<em>404 not found</em>。</p>
+<ul>
+<li>第一个注释就是解决了这个问题，配置了静态文件的本地路径<code>/views/</code>，这里根目录是<em>webapp</em>， 那么所有的<em>CSS，JS，PNG</em>, 都将在来这里找。</li>
+<li>第二个注释其实就是配置<em>FreeMarker</em>的模版路径，一般工程也都放在<em>webapp</em>的<code>/views/</code>下。</li>
+</ul>
+<h4 id="2-3，Spring-和SpringMVC是两件事"><a href="#2-3，Spring-和SpringMVC是两件事" class="headerlink" title="2.3，Spring 和SpringMVC是两件事"></a><span id="jump3">2.3，Spring 和SpringMVC是两件事</span></h4><p>这里碰见过一个事情：我有个外部的服务需要初始化，初始化如下：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;bean id="qaService" class="com.xxx.utils.qa.qaServiceImpl"&gt;</div><div class="line">    &lt;constructor-arg index="0" value="$&#123;baseURL&#125;" /&gt;</div><div class="line">    &lt;constructor-arg index="1" value="$&#123;token&#125;" /&gt;</div><div class="line">&lt;/bean&gt;</div></pre></td></tr></table></figure>
+<p>我用它的地方是在一个<em>Controller</em>里面，然而放在<em>spring-mvc-config.xml</em>就编译失败，说找不到这个<em>Bean</em>。具体为啥，可以参考上一节。因为这些<em>Bean</em>并不是有<em>SpringMVC</em>通过<code>@Service</code>标签来统一注入管理。那么它的初始化过程应该要放入<em>spring-context-web.xml</em>，在<em>SpringMVC</em>介入之间就需要实例化。否则当然只是一个接口。 </p>
+<p>所以到这里为止，相信已经对此种类型的项目有了一个基本的阅读技巧。下一章，来说一下笔者在这些基础之上，实践得到的一些感悟。</p>
+<h4 id="3，实践所得"><a href="#3，实践所得" class="headerlink" title="3，实践所得"></a><span id="jump">3，实践所得</span></h4><ul>
+<li><strong>能够迅速上手项目，并快速理解项目基本逻辑及架构。</strong><br>在我新接手的一个某智能语音机器人项目中，在没有任何需求设计接口文档的情况下，要开展测试工作，只能先从源码开始，之前的经验帮助了我，理清楚了所有接口的处理逻辑（毕竟是半路接手项目，只能先解决问题为先）。基本上一两天功夫就可以把源码大体逻辑以及框架读懂（当然，大型的项目要花更长的时间）。当时的几个思维导图之一如下：<br><img src="./4.png" alt="Alt text"></li>
+</ul>
+<p>然后就开始欢快的写接口测试用例。</p>
+<ul>
+<li><strong>QA不仅仅要整体业务上有宏观把控。出现微观上bug，也能做出<em>Root Cause</em>的前瞻分析，能够迅速定位问题。</strong></li>
+<li>略深入理解<em>Spring</em>及<em>SpringMVC</em>。</li>
+<li>找到快速融入研发团队的切入点。其实似乎是没法量化的，然而个人在团队中起到的化学反应相信都能感受到。</li>
+</ul>
+<h4 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h4><p>笔者认为在项目质量保障过程中，提升QA战斗力，需要开拓新思路。提出<strong>Think as developer</strong>，以及<strong>Do as developer</strong>在某一类项目中的一些具体技巧。为读者提供另外一种思维方式。</p>
+<p>所以白盒与黑盒不是测试手段，而是测试思维。过度关注开发细节的白盒测试没有意义，从需求出发更加的符合实际中的测试。</p>
+<blockquote>
+<p>引自 <a href="http://mp.weixin.qq.com/s?__biz=MzI2MjEwMDE2OQ==&amp;mid=2648586125&amp;idx=1&amp;sn=e5416afcc83a23b485d6d3b75da41b7e&amp;scene=1&amp;srcid=0521DV7YsyaaWND9LrEuHeYF#rd" target="_blank" rel="external">链接</a></p>
+</blockquote>
+<p><strong>业务理解第一，业务理解第一，业务理解第一。</strong></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;引言&quot;&gt;&lt;a href=&quot;#引言&quot; class=&quot;headerlink&quot; title=&quot;引言&quot;&gt;&lt;/a&gt;引言&lt;/h3&gt;&lt;p&gt;这篇文章主要介绍笔者从经历过的项目中，看到自己或者项目组QA在产品迭代中的软肋。认为可以通过另外一种思路来改善这些弱点。希望能够有助于QA最
+    
+    </summary>
+    
+      <category term="测试" scheme="https://professorlea.github.io/categories/%E6%B5%8B%E8%AF%95/"/>
+    
+    
+      <category term="测试思维" scheme="https://professorlea.github.io/tags/%E6%B5%8B%E8%AF%95%E6%80%9D%E7%BB%B4/"/>
+    
+      <category term="java" scheme="https://professorlea.github.io/tags/java/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>基于Spring MVC和Mybatis的接口测试框架实现</title>
+    <link href="https://professorlea.github.io/2016/08/12/%E5%9F%BA%E4%BA%8ESpring-MVC%E5%92%8CMybatis%E7%9A%84%E6%8E%A5%E5%8F%A3%E6%B5%8B%E8%AF%95%E6%A1%86%E6%9E%B6%E5%AE%9E%E7%8E%B0/"/>
+    <id>https://professorlea.github.io/2016/08/12/基于Spring-MVC和Mybatis的接口测试框架实现/</id>
+    <published>2016-08-12T03:15:42.000Z</published>
+    <updated>2016-10-17T08:33:51.565Z</updated>
+    
+    <content type="html"><![CDATA[<h4 id="为什么把Spring-MVC引入到接口测试中"><a href="#为什么把Spring-MVC引入到接口测试中" class="headerlink" title="为什么把Spring MVC引入到接口测试中"></a>为什么把Spring MVC引入到接口测试中</h4><p>在阅读哨兵系统的源代码进行接口测试的过程中，发现不止哨兵系统，主流运用的都是Spring MVC + Mybatis的框架来开发web。<br>发现这是个很有趣的事物，学习了一段时间，认为里面的一些个编程思想可以引入到接口测试中来。比如spring的AOP（面向切面的编程），DI也就是依赖注入或者控制反转。<br>听起来很高大上的词汇，经过一番实践，发现能够有所理解并且也引入到了接口测试中来。<br>先以我工程的代码片段来举例说明，什么叫Spring的依赖注入。 </p>
+<p><img src="1.png" alt="alter text"><br><img src="2.png" alt="alter text"><br><img src="3.png" alt="alter text"></p>
+<p>这里有三张图，第一张是使用NodeService，从第三张图中我们可以看到NodeSerice其实就只是一个接口，那么为什么在我的接口测试代码中可以直接调用它的方法呢：</p>
+<p><img src="4.png" alt="alter text"></p>
+<p> 从第二张图中，是这个接口的实现方法。打了一个@Service的注解。这个@Service的注解就是要告诉Spring框架，这是一个JAVA Bean。<br>那么，神奇的事情发生了。Spring在我的测试业务代码中，使用如下的注解@Autowired，这样Spring就把NodeServiceImpl的实例给创建出来了。</p>
+<p><img src="5.png" alt="alter text"></p>
+<p>这就是所谓的依赖注入，或者是控制反转。因为实例化NodeServiceImpl的操作Spring帮我们做了，所谓的控制权从我们的业务测试代码转移给了Spring。</p>
+<p>那么，这其实就是我理解的AOP，所谓的面向配置或面向切面的编程。在你的业务代码里切入一刀，然后把实例注入进去。，这里说说一句话的事儿，说实话这一句话让我理解了好久。<br><em>（其实@Resource也可以，他们有区别，但是我没搞清楚具体使用起来的区别）</em><br>往常的做法应该是如下面的示例，需要new一个实例。</p>
+<p><img src="6.png" alt="alter text"></p>
+<p>更近一层，既然知道了这样的编程思想。为啥不能把我们常用的HTTP请求的类给转化成这样的呢。答案是肯定的，当然可以。如下面几幅图： </p>
+<p><img src="7.png" alt="alter text"><br><img src="8.png" alt="alter text"><br><img src="9.png" alt="alter text"></p>
+<p>就这样，我们HTTP也是提供给业务测试的一种Service。</p>
+<h4 id="为什么把Mybatis引入到接口测试中"><a href="#为什么把Mybatis引入到接口测试中" class="headerlink" title="为什么把Mybatis引入到接口测试中"></a>为什么把Mybatis引入到接口测试中</h4><p>Mybatis是一款轻量级的持久层框架，也是哨兵系统进行Dao访问用到的框架。我不知道Hibernate，不要问我区别在哪里，轻在哪里，我只知道很轻便。<br>依旧举例说明：<br>首先，展示一下DB层的JAVA代码映射，如下面2张图：</p>
+<p><img src="10.png" alt="alter text"><br><img src="11.png" alt="alter text"></p>
+<p>Node是哨兵系统的一张表，格式如下：<br><img src="12.png" alt="alter text"></p>
+<p>可以看出来Node这个class的所有属性，就是对节点表Node的映射。这就是所谓的DB层。<br>那么Dao层怎么实现的呢，先看图：</p>
+<p><img src="13.png" alt="alter text"><br><img src="14.png" alt="alter text"></p>
+<p>只要定义一个NodeMapper的Interface，然后配置一个nodeMapper.xml，然后我们看到Mapper文件引用的就是NodeMapper这个接口，然后下面的id = create, retrieveById,retrieveByName。很明显，就是这些Interface方法的实现。然后具体内容其实就是带有变量的SQL语句。</p>
+<p>简单的讲，其实Mybatis就是这样容易。不用你在使用JDBC的方式把SQL语句以String的方式写入到代码中。只需要的一个配置文件。这也是所谓的面向切面/配置的编程。</p>
+<h4 id="如何搭建环境实现"><a href="#如何搭建环境实现" class="headerlink" title="如何搭建环境实现"></a>如何搭建环境实现</h4><p>如何使上面这些体系运行起来，这里其实就是Spring的配置的问题。</p>
+<h5 id="第一部分：将Spring把所有的JAVA-Bean扫进来"><a href="#第一部分：将Spring把所有的JAVA-Bean扫进来" class="headerlink" title="第一部分：将Spring把所有的JAVA Bean扫进来"></a>第一部分：将Spring把所有的JAVA Bean扫进来</h5><p><img src="15.png" alt="alter text"></p>
+<h5 id="第二部分：指定数据源dataSource，也就是MySql连接池"><a href="#第二部分：指定数据源dataSource，也就是MySql连接池" class="headerlink" title="第二部分：指定数据源dataSource，也就是MySql连接池"></a>第二部分：指定数据源dataSource，也就是MySql连接池</h5><p><img src="16.png" alt="alter text"></p>
+<h5 id="第三部分：将Mybatis和Spring整合"><a href="#第三部分：将Mybatis和Spring整合" class="headerlink" title="第三部分：将Mybatis和Spring整合"></a>第三部分：将Mybatis和Spring整合</h5><p><img src="17.png" alt="alter text"></p>
+<p>SqlSessionFactoryBean这个类是Spring提供应用于建立SQL连接池的。<br>其中：</p>
+<ul>
+<li>typeAliasesPackage：它一般对应我们的实体类所在的包，这个时候会自动取对应包中不包括包名的简单类名作为包括包名的别名。多个package之间可以用逗号或者分号等来进行分隔。</li>
+<li>MapperScannerConfigurer：<br>利用上面的方法进行整合的时候，我们有一个Mapper就需要定义一个对应的MapperFactoryBean，当我们的Mapper比较少的时候，这样做也还可以，但是当我们的Mapper相当多时我们再这样定义一个个Mapper对应的MapperFactoryBean就显得速度比较慢了。为此Mybatis-Spring为我们提供了一个叫做MapperScannerConfigurer的类，通过这个类Mybatis-Spring会自动为我们注册Mapper对应的MapperFactoryBean对象。</li>
+</ul>
+<p>好了。你可以做TestNG的测试业务代码编写了。 </p>
+<h5 id="如何进行TestNG和Spring的结合"><a href="#如何进行TestNG和Spring的结合" class="headerlink" title="如何进行TestNG和Spring的结合"></a>如何进行TestNG和Spring的结合</h5><p>在每一个测试类中按照下面这么配置：<br><img src="18.png" alt="alter text"></p>
+<p>@ContextConfiguration和AbstractTestNGSpringContextTests就可以做到。<br>原因是：因为我这个是Maven工程，执行的是Maven test命令。而Spring运行test的时候是一个隔离的状态。所以没有办法注入。<br>这里找到的答案：<br>“If you create unit tests, Spring IoC functionality is unavailable(as it was intended by the framework designers), because you are testing your objects in isolation(i.e. you are mocking only minimal set of interfaces which are required for the test to complete). “</p>
+<blockquote>
+<p>[引自]：(<a href="http://stackoverflow.com/questions/13092322/spring-testng-integration-tests-injecting-dao-with-annotations-fails" target="_blank" rel="external">http://stackoverflow.com/questions/13092322/spring-testng-integration-tests-injecting-dao-with-annotations-fails</a>)</p>
+</blockquote>
+<p>继续你的业务代码编写吧。</p>
+<h4 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h4><h5 id="IDE的选择"><a href="#IDE的选择" class="headerlink" title="IDE的选择"></a>IDE的选择</h5><p>IntelliJ IDEA真的是太好用了。</p>
+<ul>
+<li>天生集成了Maven, Git。并且比如什么markdown语言啊，freeMarker，git的ignore文件这些都是可以智能编写。</li>
+<li>有code inspection功能。你Git push的时候它会有个选项让你做一下code inspection再说..</li>
+<li>而且正如名字所说，智能。联想功能很强大。</li>
+<li>长得好看，速度快..</li>
+</ul>
+<h5 id="技巧"><a href="#技巧" class="headerlink" title="技巧"></a>技巧</h5><ul>
+<li>Alt+F8，呼唤出Maven的window。</li>
+<li>shift+esc,退出窗口</li>
+<li>Ctrl+alt+S, 呼唤出Setting配置出现错误的时候，</li>
+<li>alt+Enter，出现错误时，它可以给很好联想出解决办法的。</li>
+<li>可以选择Eclipse的喜好，默认支持Eclipse的所有快捷键。</li>
+<li>支持VIM编辑器，对于那些linux大神们，可以用这种全宇宙最强大的编辑器了。我不会用。</li>
+<li>….</li>
+</ul>
+<h5 id="如何在TestNG中调试"><a href="#如何在TestNG中调试" class="headerlink" title="如何在TestNG中调试"></a>如何在TestNG中调试</h5><p><strong>配置maven命令如下</strong><br>surefire是maven的一个插件，专门用来test的，TestNG的测试一系列比如报告生成啊，什么都是它来做的<br><img src="19.png" alt="alter text"></p>
+<p><strong>建立一个Remote</strong><br><img src="20.png" alt="alter text"><br>这个5005端口是默认打开的一个用于连接的端口，在下面的图会有体现。</p>
+<p><strong>运行Maven命令</strong><br><img src="21.png" alt="alter text"><br>这个时候test的进程就停在那里了。</p>
+<p><strong>运行Remote</strong><br><img src="22.png" alt="alter text"></p>
+<p>这个时候，只要有断点，就可以断下来了。<br>至于TestNG本身的知识，这里就不多说了，很多注解和属性我也在使用中。</p>
+<h4 id="碰见的坑"><a href="#碰见的坑" class="headerlink" title="碰见的坑"></a>碰见的坑</h4><ul>
+<li>Spring和TestNG的结合，请参阅前面的章节，如果不这么做，TestNG是不会引入spring的所有配置文件的。</li>
+<li>TestNG的调试，参阅前面的章节</li>
+<li>StringEntity() 和 UrlEncodedFormEntity() 的区别：</li>
+</ul>
+<p>加载HTTP参数的时候，之前用的UrlEncodedFormEntity，参数传过去不识别。最后发现问题在这里。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">httppost.setEntity(<span class="keyword">new</span> StringEntity(JSON.toJSONString(params), <span class="string">"UTF-8"</span>));</div></pre></td></tr></table></figure>
+<p>可以参考：<a href="http://xiaoliandroid.blog.51cto.com/4103661/1625766" target="_blank" rel="external">链接</a></p>
+<p>有啥问题，可以一起讨论学习。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h4 id=&quot;为什么把Spring-MVC引入到接口测试中&quot;&gt;&lt;a href=&quot;#为什么把Spring-MVC引入到接口测试中&quot; class=&quot;headerlink&quot; title=&quot;为什么把Spring MVC引入到接口测试中&quot;&gt;&lt;/a&gt;为什么把Spring MVC引入到接口测
+    
+    </summary>
+    
+      <category term="测试" scheme="https://professorlea.github.io/categories/%E6%B5%8B%E8%AF%95/"/>
+    
+    
+      <category term="java" scheme="https://professorlea.github.io/tags/java/"/>
+    
+      <category term="API test" scheme="https://professorlea.github.io/tags/API-test/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Practise with Appium on IOS</title>
+    <link href="https://professorlea.github.io/2016/08/12/Practise-with-Appium-on-IOS/"/>
+    <id>https://professorlea.github.io/2016/08/12/Practise-with-Appium-on-IOS/</id>
+    <published>2016-08-12T01:06:27.000Z</published>
+    <updated>2016-10-17T08:33:51.505Z</updated>
+    
+    <content type="html"><![CDATA[<h4 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h4><p>有两种方式。</p>
+<p><strong>第一种方式：</strong><br>通过npm，你必定需要在一台OS X系统上，亲。所以Homebrew先要有。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&gt; brew install node           # get node.js</div><div class="line">&gt; npm install -g appium   # get appium</div><div class="line">&gt; npm install wd               # get appium client</div><div class="line">&gt; appium &amp;                      # start appium</div></pre></td></tr></table></figure>
+<p>版本号如图：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">myMac:release-iphonesimulator root$ node -v</div><div class="line">v5.6.0</div><div class="line">myMac:release-iphonesimulator root$ npm -v</div><div class="line">3.6.0</div><div class="line">myMac:release-iphonesimulator root$ appium -v</div><div class="line">1.4.16</div></pre></td></tr></table></figure>
+<p><em>tips：这里NPM的安装可以使用taboo提供的国内镜像。</em></p>
+<p><strong>具体参考：</strong><br><a href="https://npm.taobao.org/" target="_blank" rel="external">npm taobao</a><br>或者安装成taboo的CNPM。其本质就是APM加了参数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">--registry=https://registry.npm.taobao.org</div></pre></td></tr></table></figure>
+<p>比如：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ npm install g cnpm -registry=https://registry.npm.taobao.org</div></pre></td></tr></table></figure>
+<p>appium运行后会出现下面的截图：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">myMac:release-iphonesimulator root$ info: Welcome to Appium v1.4.16 (REV ae6877eff263066b26328d457bd285c0cc62430d)</div><div class="line">info: Appium REST http interface listener started on 0.0.0.0:4723</div><div class="line">info: Console LogLevel: debug</div></pre></td></tr></table></figure>
+<p>这里需要说明的是IOS9.2 xcode7以上的版本，只有appium1.5.0才支持，而现在在2015.02.26刚release。<strong>可见自动化工具要在IOS版本之后很久才能支持。</strong></p>
+<p><strong>第二种方式：</strong><br>直接下载appium.img包，安装成一个界面应用。如图所示</p>
+<p><img src="1.png" alt="alter text"></p>
+<p>不难看出这里的支持安卓和IOS两种。<br>以IOS为例，这里的配置项和我们通过代码的方式是一样。代码在下面不要急。</p>
+<p><img src="2.png" alt="alter text"></p>
+<p>需要注意的是这里通过Launch启动不能和之前通过命令行启动一起使用，否则会出现：</p>
+<p><img src="3.png" alt="alter text"></p>
+<p>提示端口占用。</p>
+<h4 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h4><p>那么server起来之后就可以写测试脚本了。现在介绍一下appium。它分为server和client。</p>
+<ul>
+<li><p>server: Appium 服务端定义了官方协议的扩展，为Appium用户提供了方便的接口来执行各种设备动作，例如在测试过程中安装/卸载app。所以只要启动server如上面所述即可。</p>
+</li>
+<li><p>client是对selenium的简单扩展。所以selenium支持的开发语言，appium都支持：</p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">语言</th>
+<th style="text-align:center">url</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Ruby</td>
+<td style="text-align:center"><a href="https://github.com/appium/ruby_lib" target="_blank" rel="external">https://github.com/appium/ruby_lib</a></td>
+</tr>
+<tr>
+<td style="text-align:center">Python</td>
+<td style="text-align:center"><a href="https://github.com/appium/python-client" target="_blank" rel="external">https://github.com/appium/python-client</a></td>
+</tr>
+<tr>
+<td style="text-align:center">Java</td>
+<td style="text-align:center"><a href="https://github.com/appium/java-client" target="_blank" rel="external">https://github.com/appium/java-client</a></td>
+</tr>
+<tr>
+<td style="text-align:center">JavaScript (Node.js)</td>
+<td style="text-align:center"><a href="https://github.com/admc/wd" target="_blank" rel="external">https://github.com/admc/wd</a></td>
+</tr>
+<tr>
+<td style="text-align:center">Objective C</td>
+<td style="text-align:center"><a href="https://github.com/appium/selenium-objective-c" target="_blank" rel="external">https://github.com/appium/selenium-objective-c</a></td>
+</tr>
+<tr>
+<td style="text-align:center">PHP</td>
+<td style="text-align:center"><a href="https://github.com/appium/php-client" target="_blank" rel="external">https://github.com/appium/php-client</a></td>
+</tr>
+<tr>
+<td style="text-align:center">C# (.NET)</td>
+<td style="text-align:center"><a href="https://github.com/appium/appium-dotnet-driver" target="_blank" rel="external">https://github.com/appium/appium-dotnet-driver</a></td>
+</tr>
+<tr>
+<td style="text-align:center">RobotFramework</td>
+<td style="text-align:center"><a href="https://github.com/jollychang/robotframework-appiumlibrary" target="_blank" rel="external">https://github.com/jollychang/robotframework-appiumlibrary</a></td>
+</tr>
+</tbody>
+</table>
+<p>这里我们用JAVA。通过pom来引入java-client，嗯，maven都很熟，不是重点。</p>
+<p><img src="4.png" alt="alter text"></p>
+<p>其实所谓的client就是你的测试脚本。<br><strong>仍然秉承selenium web UI的测试思路，测试数据、ui控件描述和测试逻辑三者之间的独立。</strong><br>自然而然，使用成功实践的项目组织结构如下，当然具体工具还是熟悉的TestNG + Maven：<br><img src="5.png" alt="alter text"></p>
+<p>其中page_object 文件夹，是每个页面的元素的获取的类<br><img src="6.png" alt="alter text"></p>
+<p>测试类：IOSPageObjecttest是测试执行<br><img src="7.png" alt="alter text"></p>
+<ul>
+<li>第一个红框里的都是需要定义的，从字面也可以理解<br>app的路径就是通过xcode来生成的路径。这个就是被测对象。<br>需要定义Platform，Platform version（IOS的版本号），DEVICE_NAME(通过Xcode的devices可以查看)，UDID（通过xcode的devices查看）。模拟器测试可以忽略UDID这个选项。但是对于真机调试是必须的<br>选项。后续将如果进行真机调试</li>
+<li>第二个红框是初始化测试的Page，也就是页面元素获取，实例化图一。然后使用类似于selenium web driver的方式，初始化一个driver，然后绑定pagefactory</li>
+<li>第三个红框就是具体的测试用例。<br>本例使用的是Junit，所以有setup  tearDown操作。TestNG类似，可以使用@Beforetest这样的annotation来做到。<br>用例运行，这个就是maven的操作了：</li>
+</ul>
+<p>全集执行或者单个用例执行：:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">mvn test</div><div class="line">mvn -Dtest=com.saucelabs.appium.iOSPageObjectTest test</div></pre></td></tr></table></figure>
+<h4 id="真机调试"><a href="#真机调试" class="headerlink" title="真机调试"></a>真机调试</h4><p>上面的所以工作在进行IOS simulator测试并不会出现很多问题。但是真机调试的问题就来了。IOS的生态系统比较严谨，证书很多。如果你所测试的设备没有在某个开发者账户下，那么就不会签名认证，就不会生成app。<br>你需要：</p>
+<ul>
+<li>描述文件（Provisioning Profiles）</li>
+<li>开发者证书(os_development.cer，或者已经到处的p12文件)</li>
+</ul>
+<p>所有都搞定了。这里你慢慢找吧，你需要一天时间。<br>就可以通过前面介绍的两种方式的任意一种，使用appium的GUI（appium-dot-app）或者命令行来执行case。</p>
+<h4 id="appium-inspector"><a href="#appium-inspector" class="headerlink" title="appium inspector"></a>appium inspector</h4><p>其本质是定位元素：<br><img src="8.png" alt="alter text"></p>
+<p>类似于Chrome developer tools，无需过多介绍。<br>通过这个网站 <a href="http://www.xpathtester.com/xpath" target="_blank" rel="external">xpathtester</a><br>将view hierarchy的xml文件load进来后，可以简化path的获取。<br>就这些吧，自己玩。IOS及OS X是另外一个生态系统，慢慢玩起。</p>
+<h4 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h4><ol>
+<li><a href="https://github.com/appium/appium-dot-apphttps://github.com/appium/appium-dot-app" target="_blank" rel="external">appium GUI</a></li>
+<li><a href="http://appium.io/http://appium.io/" target="_blank" rel="external">appium官网</a></li>
+<li><a href="http://appium.io/slate/cn/master/?java#about-appium" target="_blank" rel="external">appium API中文版</a></li>
+<li><a href="https://github.com/leecade/ios-dev-flow" target="_blank" rel="external">IOS证书介绍</a></li>
+<li><a href="https://github.com/appium/appium/blob/master/docs/en/appium-setup/real-devices.mdhttps://github.com/appium/appium/blob/master/docs/en/appium-setup/real-devices.md" target="_blank" rel="external">appium真机调试</a></li>
+<li><a href="https://github.com/appium/java-client" target="_blank" rel="external">appium java client</a></li>
+<li><a href="http://doc.hz.netease.com/pages/worddav/preview.action?fileName=%E8%91%9B%E9%94%8B-appium%E5%9C%A8%E6%B6%88%E6%81%AF%E6%8E%A8%E9%80%81%E5%B9%B3%E5%8F%B0%E7%9A%84%E5%BA%94%E7%94%A8.ppt&amp;pageId=37660981" target="_blank" rel="external">葛锋-appium在消息推送平台的应用(内部网站)</a></li>
+</ol>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h4 id=&quot;安装&quot;&gt;&lt;a href=&quot;#安装&quot; class=&quot;headerlink&quot; title=&quot;安装&quot;&gt;&lt;/a&gt;安装&lt;/h4&gt;&lt;p&gt;有两种方式。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;第一种方式：&lt;/strong&gt;&lt;br&gt;通过npm，你必定需要在一台OS X系统上，亲。所以Hom
+    
+    </summary>
+    
+      <category term="测试" scheme="https://professorlea.github.io/categories/%E6%B5%8B%E8%AF%95/"/>
+    
+    
+      <category term="UITest" scheme="https://professorlea.github.io/tags/UITest/"/>
+    
+      <category term="IOS" scheme="https://professorlea.github.io/tags/IOS/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Flask web开发技能树</title>
+    <link href="https://professorlea.github.io/2016/08/11/Flash-web%E5%BC%80%E5%8F%91%E6%8A%80%E8%83%BD%E6%A0%91/"/>
+    <id>https://professorlea.github.io/2016/08/11/Flash-web开发技能树/</id>
+    <published>2016-08-11T01:21:50.000Z</published>
+    <updated>2016-10-17T08:33:51.489Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote>
+<p>开发异常测试平台的过程中，本人对于Flask Web开发的一些总结，也认为是你的必经之路。<br>读者有兴趣的话，可以一起玩，愿你们少走弯路。这些你都掌握了，你应该具备了中级前端开发工程师以及中级后端开发工程师的素质。</p>
+</blockquote>
+<p><img src="Flaskweb.png" alt="Alt text"></p>
+<p>也稍微了解过一些Django，其实不用太纠结到底学哪个。感觉里面很多都是类似的，比如Flask所用的字符串模板Jinja2就是从Django中扩展而来的，包括都用到的视图路由等概念，用的SQLAlchemy也是flask扩展版本的。而其中的session current_user等都是一样的，使用的是Werkzeug的Request对象。</p>
+<p>甚至在我了解到的运维工单系统，框架使用的是Django，然而设计的RESTFul API(占比其中90%的接口)都是用的Flask-RESTFul 扩展。</p>
+<p>所以学哪个都可以，希望这个技能树对你有用，我们一起交流提高。都是相通的，大家一起到那种无招胜有招的地步，就是高手啦。</p>
+<h4 id="遇见的坑"><a href="#遇见的坑" class="headerlink" title="遇见的坑"></a>遇见的坑</h4><p>记不得了，碰见坑一起交流吧。</p>
+<h4 id="其他资料"><a href="#其他资料" class="headerlink" title="其他资料"></a>其他资料</h4><h5 id="GIT操作"><a href="#GIT操作" class="headerlink" title="GIT操作"></a>GIT操作</h5><p><img src="git.png" alt="Alt text"></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;开发异常测试平台的过程中，本人对于Flask Web开发的一些总结，也认为是你的必经之路。&lt;br&gt;读者有兴趣的话，可以一起玩，愿你们少走弯路。这些你都掌握了，你应该具备了中级前端开发工程师以及中级后端开发工程师的素质。&lt;/p&gt;
+&lt;/blockquo
+    
+    </summary>
+    
+      <category term="Python" scheme="https://professorlea.github.io/categories/Python/"/>
+    
+    
+      <category term="Flask" scheme="https://professorlea.github.io/tags/Flask/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Do WEBUI on Linux</title>
+    <link href="https://professorlea.github.io/2016/08/10/Do-WEBUI-on-Linux/"/>
+    <id>https://professorlea.github.io/2016/08/10/Do-WEBUI-on-Linux/</id>
+    <published>2016-08-10T08:17:40.000Z</published>
+    <updated>2016-10-17T08:33:51.482Z</updated>
+    
+    <content type="html"><![CDATA[<h4 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h4><h5 id="Xvfb介绍"><a href="#Xvfb介绍" class="headerlink" title="Xvfb介绍"></a>Xvfb介绍</h5><blockquote>
+<p>Xvfb is an X server that can run on machines with no display hardware and no physical input devices. It emulates a dumb framebuffer using virtual memory.<br><a href="https://www.x.org/archive/X11R7.6/doc/man/man1/Xvfb.1.xhtml" target="_blank" rel="external">https://www.x.org/archive/X11R7.6/doc/man/man1/Xvfb.1.xhtml</a></p>
+</blockquote>
+<p>简单来说，就是模拟了window的图形化功能，所以如果想实例化FireFoxWebDriver，仍然需要安装一个firefox。</p>
+<h5 id="Xvfb安装"><a href="#Xvfb安装" class="headerlink" title="Xvfb安装"></a>Xvfb安装</h5><figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">root@xxx:~<span class="comment"># aptitude search xvfb</span></div><div class="line">i   xvfb                                                               - Virtual Framebuffer <span class="string">'fake'</span> X server </div><div class="line">root@xxx:~<span class="comment"># aptitude install xvfb</span></div></pre></td></tr></table></figure>
+<h5 id="Xvfb启动"><a href="#Xvfb启动" class="headerlink" title="Xvfb启动"></a>Xvfb启动</h5><figure class="highlight powershell"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">root@xxx:~<span class="comment"># Xvfb :1 -screen 1 1600x1200x16</span></div><div class="line">root@xxx:~<span class="comment"># ps -ef | grep Xvfb</span></div><div class="line">root     <span class="number">19118</span>  <span class="number">4988</span>  <span class="number">0</span> <span class="number">10</span>:<span class="number">48</span> pts/<span class="number">6</span>    <span class="number">00</span>:<span class="number">00</span>:<span class="number">00</span> grep Xvfb</div><div class="line">root     <span class="number">24808</span>     <span class="number">1</span>  <span class="number">0</span> Jun28 pts/<span class="number">1</span>    <span class="number">00</span>:<span class="number">00</span>:<span class="number">33</span> Xvfb :<span class="number">1</span> -screen <span class="number">1</span> <span class="number">1600</span>x1200x16 -nolisten tcp</div></pre></td></tr></table></figure>
+<p>命令的意思是：作为Server Number1 监听。有两个屏幕配置，默认是Screen0，width, height, and depth = 1280x1024x8，第二块屏幕配置为width, height, and depth = 1600x1200x16。</p>
+<p>这里如果用自动启动脚本是更佳的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">root@xxx:/etc/init.d# vim /etc/init.d/xvfb</div><div class="line">#!/bin/bash</div><div class="line">#chkconfig: 345 95 50</div><div class="line">#description: Starts xvfb on display 1</div><div class="line">if [ -z &quot;$1&quot; ]; then</div><div class="line">    echo &quot;`basename $0` &#123;start|stop&#125;&quot;</div><div class="line">    exit</div><div class="line">fi</div><div class="line">case &quot;$1&quot; in</div><div class="line">    start)</div><div class="line">    Xvfb :1 -screen 1 1600x1200x16 -nolisten tcp &amp;</div><div class="line">    export DISPLAY=:1</div><div class="line">    echo &apos;export DISPLAY=:1&apos; &gt;&gt; ~/.bashrc</div><div class="line">    ;;</div><div class="line">    stop)</div><div class="line">    killall Xvfb</div><div class="line">    ;;</div><div class="line">esac</div></pre></td></tr></table></figure>
+<h5 id="Firefox"><a href="#Firefox" class="headerlink" title="Firefox"></a>Firefox</h5><h6 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">root@xxx:~# aptitude search firefox</div><div class="line">i   firefox-esr                                                        - Mozilla Firefox web browser - Extended Support Release (ESR) </div><div class="line">root@xxx:~# aptitude install firefox-esr</div><div class="line">root@xxx:~# firefox -v</div><div class="line">Mozilla Firefox 45.2.0</div></pre></td></tr></table></figure>
+<h6 id="启动firefox"><a href="#启动firefox" class="headerlink" title="启动firefox"></a>启动firefox</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">root@xxx:~# firefox</div><div class="line">Xlib:  extension &quot;RANDR&quot; missing on display &quot;:1&quot;.</div><div class="line">Xlib:  extension &quot;RANDR&quot; missing on display &quot;:1&quot;.</div></pre></td></tr></table></figure>
+<p>到这里是不是有点懵比，界面呢？？ VNC server来解决这个问题</p>
+<h5 id="X11VNC-server"><a href="#X11VNC-server" class="headerlink" title="X11VNC server"></a>X11VNC server</h5><h6 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h6><blockquote>
+<p>x11vnc allows one to view remotely and interact with real X displays (i.e. a display corresponding to a physical monitor, keyboard, and mouse) with any VNC viewer.<br><a href="http://www.karlrunge.com/x11vnc/" target="_blank" rel="external">http://www.karlrunge.com/x11vnc/</a></p>
+</blockquote>
+<h6 id="安装运行"><a href="#安装运行" class="headerlink" title="安装运行"></a>安装运行</h6><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">root@xxx:~# aptitude search X11VNC</div><div class="line">i   x11vnc                                                             - VNC server to allow remote access to an existing X session  </div><div class="line"></div><div class="line">root@xxx:~# aptitude install x11vnc</div><div class="line">root@xxx:~# x11vnc -display :1 -xkb</div></pre></td></tr></table></figure>
+<p>参数解释，Display 1，就是上面Xvfb配置的1号屏幕。<br>-xkb，看到官网解释，是优化键盘输入</p>
+<blockquote>
+<p><a href="http://www.karlrunge.com/x11vnc/x11vnc_opts.html" target="_blank" rel="external">http://www.karlrunge.com/x11vnc/x11vnc_opts.html</a></p>
+</blockquote>
+<h6 id="安装VNC-Viewer"><a href="#安装VNC-Viewer" class="headerlink" title="安装VNC Viewer"></a>安装VNC Viewer</h6><p>这个就不多说了，<a href="http://www.realvnc.com/，来这里找到下载包安装即可。" target="_blank" rel="external">http://www.realvnc.com/，来这里找到下载包安装即可。</a><br>通过VNC viewer链接 云主机，效果如下：<br><img src="viewer.png" alt="Alt text"></p>
+<h4 id="测试执行效果"><a href="#测试执行效果" class="headerlink" title="测试执行效果"></a>测试执行效果</h4><h5 id="测试selenium"><a href="#测试selenium" class="headerlink" title="测试selenium"></a>测试selenium</h5><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line"><span class="comment">#!/usr/bin/env python</span></div><div class="line"><span class="comment"># -*- coding: utf-8 -*-</span></div><div class="line"><span class="keyword">import</span> selenium</div><div class="line"><span class="keyword">from</span> selenium <span class="keyword">import</span> webdriver</div><div class="line"><span class="keyword">from</span> selenium.webdriver.common.keys <span class="keyword">import</span> Keys</div><div class="line"><span class="keyword">from</span> selenium.common.exceptions <span class="keyword">import</span> NoSuchElementException, TimeoutException</div><div class="line">browser = webdriver.Firefox()</div><div class="line">browser.get(<span class="string">"http://www.baidu.com"</span>)</div><div class="line">t=browser.find_element_by_xpath(<span class="string">"//div[contains(@id,'ftCon')]"</span>)</div><div class="line"><span class="keyword">print</span> t.text</div></pre></td></tr></table></figure>
+<p>执行效果如下：<br><img src="CI.png" alt="Alt text"></p>
+<p>成功</p>
+<h4 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h4><ul>
+<li>还未大范围执行，不知道稳定性如何。也不知道和window/Mac OX真实场景相比如何</li>
+<li>openid访问内网一般都需要将军令，这个需要解决。</li>
+<li>Chrome还未实验，不知能否走下去。</li>
+</ul>
+<h4 id="展望"><a href="#展望" class="headerlink" title="展望"></a>展望</h4><ul>
+<li>如果使用Docker，安装Ubuntu的镜像，应该可以快速解决上述环境搭建问题。</li>
+</ul>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h4 id=&quot;环境搭建&quot;&gt;&lt;a href=&quot;#环境搭建&quot; class=&quot;headerlink&quot; title=&quot;环境搭建&quot;&gt;&lt;/a&gt;环境搭建&lt;/h4&gt;&lt;h5 id=&quot;Xvfb介绍&quot;&gt;&lt;a href=&quot;#Xvfb介绍&quot; class=&quot;headerlink&quot; title=&quot;Xvfb介
+    
+    </summary>
+    
+      <category term="测试" scheme="https://professorlea.github.io/categories/%E6%B5%8B%E8%AF%95/"/>
+    
+    
+      <category term="UITest" scheme="https://professorlea.github.io/tags/UITest/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>This is my first step on GitHub</title>
+    <link href="https://professorlea.github.io/2016/08/01/hello-world/"/>
+    <id>https://professorlea.github.io/2016/08/01/hello-world/</id>
+    <published>2016-08-01T01:21:50.000Z</published>
+    <updated>2016-10-17T08:33:51.562Z</updated>
+    
+    <content type="html"><![CDATA[<p>这里会对自己在互联网及测试相关技术上的收获进行沉淀。去伪存真。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;这里会对自己在互联网及测试相关技术上的收获进行沉淀。去伪存真。&lt;/p&gt;
+
+    
+    </summary>
+    
+    
+  </entry>
+  
+</feed>
