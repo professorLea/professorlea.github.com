@@ -87,22 +87,22 @@
 
 
 <meta name="description" content="引言这篇文章主要介绍笔者从经历过的项目中，看到自己或者项目组QA在产品迭代中的软肋。认为可以通过另外一种思路来改善这些弱点。希望能够有助于QA最大化的做好质量保障工作。
-1，产品迭代中QA自身的Bug（软肋）是什么？1.1 需求偏于口头传述产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的">
+产品迭代中QA自身的Bug（软肋）是什么？需求偏于口头传述产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的测试流程之外">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Think as developer,从深入理解业务实现框架开始">
 <meta property="og:url" content="https://professorlea.github.io/2016/08/12/Think-as-developer-从深入理解业务实现框架开始/index.html">
 <meta property="og:site_name" content="professorLea">
 <meta property="og:description" content="引言这篇文章主要介绍笔者从经历过的项目中，看到自己或者项目组QA在产品迭代中的软肋。认为可以通过另外一种思路来改善这些弱点。希望能够有助于QA最大化的做好质量保障工作。
-1，产品迭代中QA自身的Bug（软肋）是什么？1.1 需求偏于口头传述产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的">
+产品迭代中QA自身的Bug（软肋）是什么？需求偏于口头传述产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的测试流程之外">
 <meta property="og:image" content="https://professorlea.github.io/./1.png">
 <meta property="og:image" content="https://professorlea.github.io/./2.png">
 <meta property="og:image" content="https://professorlea.github.io/./3.png">
 <meta property="og:image" content="https://professorlea.github.io/./4.png">
-<meta property="og:updated_time" content="2016-11-02T09:41:42.265Z">
+<meta property="og:updated_time" content="2016-11-07T02:03:01.343Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Think as developer,从深入理解业务实现框架开始">
 <meta name="twitter:description" content="引言这篇文章主要介绍笔者从经历过的项目中，看到自己或者项目组QA在产品迭代中的软肋。认为可以通过另外一种思路来改善这些弱点。希望能够有助于QA最大化的做好质量保障工作。
-1，产品迭代中QA自身的Bug（软肋）是什么？1.1 需求偏于口头传述产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的">
+产品迭代中QA自身的Bug（软肋）是什么？需求偏于口头传述产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的测试流程之外">
 <meta name="twitter:image" content="https://professorlea.github.io/./1.png">
 
 
@@ -337,10 +337,10 @@
 
       
         <h3 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h3><p>这篇文章主要介绍笔者从经历过的项目中，看到自己或者项目组QA在产品迭代中的软肋。认为可以通过另外一种思路来改善这些弱点。希望能够有助于QA最大化的做好质量保障工作。</p>
-<h3 id="1，产品迭代中QA自身的Bug（软肋）是什么？"><a href="#1，产品迭代中QA自身的Bug（软肋）是什么？" class="headerlink" title="1，产品迭代中QA自身的Bug（软肋）是什么？"></a>1，产品迭代中QA自身的Bug（软肋）是什么？</h3><h4 id="1-1-需求偏于口头传述"><a href="#1-1-需求偏于口头传述" class="headerlink" title="1.1 需求偏于口头传述"></a>1.1 需求偏于口头传述</h4><p>产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的测试流程之外，我们需要想一些新的办法。</p>
-<h4 id="1-2-需求和实现衔接不能达到无缝连接"><a href="#1-2-需求和实现衔接不能达到无缝连接" class="headerlink" title="1.2 需求和实现衔接不能达到无缝连接"></a>1.2 需求和实现衔接不能达到无缝连接</h4><p>测试的起点是明确测试的需求，然而有些很具体的问题，需要帮助开发定位问题的时候，需求只定义了一些比较粗的业务目标，然而具体实现由开发掌握。这里的衔接过程，QA是袖手旁观呢，还是参与其中。笔者认为后者可能可以更深入的接近实现，达到最大化的质量保障。 </p>
+<h3 id="产品迭代中QA自身的Bug（软肋）是什么？"><a href="#产品迭代中QA自身的Bug（软肋）是什么？" class="headerlink" title="产品迭代中QA自身的Bug（软肋）是什么？"></a>产品迭代中QA自身的Bug（软肋）是什么？</h3><h4 id="需求偏于口头传述"><a href="#需求偏于口头传述" class="headerlink" title="需求偏于口头传述"></a>需求偏于口头传述</h4><p>产品的快速迭代，可以迅速满足用户需求，然而却也有一些后遗症，比如部分需求描述偏向于口头传述，文档后于实现，会给QA工作造成比较大的困难。所以在坚守一些固有可靠的测试流程之外，我们需要想一些新的办法。</p>
+<h4 id="需求和实现衔接不能达到无缝连接"><a href="#需求和实现衔接不能达到无缝连接" class="headerlink" title="需求和实现衔接不能达到无缝连接"></a>需求和实现衔接不能达到无缝连接</h4><p>测试的起点是明确测试的需求，然而有些很具体的问题，需要帮助开发定位问题的时候，需求只定义了一些比较粗的业务目标，然而具体实现由开发掌握。这里的衔接过程，QA是袖手旁观呢，还是参与其中。笔者认为后者可能可以更深入的接近实现，达到最大化的质量保障。 </p>
 <p>是时候开拓一种新思路了。<strong>Think as developer</strong>，从阅读并深入理解业务实现框架开始吧。即使代码并不是出自QA手，用到的开源或者内部框架并不熟悉，那么也要尝试开始跳出QA的舒适区，开始更贴合的去理解业务逻辑及代码实现细节。这个过程，QA要重新定位自己，重新定位质量保障的核心竞争力。</p>
-<h3 id="2，在项目中的具体实践"><a href="#2，在项目中的具体实践" class="headerlink" title="2，在项目中的具体实践"></a>2，在项目中的具体实践</h3><p>有了<strong>Think as developer</strong>这样的思路，那么如何具体到 <strong>Do as developer</strong>？笔者在下面2个项目中进行了实践：</p>
+<h3 id="在项目中的具体实践"><a href="#在项目中的具体实践" class="headerlink" title="在项目中的具体实践"></a>在项目中的具体实践</h3><p>有了<strong>Think as developer</strong>这样的思路，那么如何具体到 <strong>Do as developer</strong>？笔者在下面2个项目中进行了实践：</p>
 <ul>
 <li>某运维监控系统<em>Web</em>、<em>API</em>及<em>Task</em>模块源码阅读</li>
 <li>某智能语音项目<em>Java</em>层源码阅读</li>
@@ -355,7 +355,7 @@
 <li><a href="#jump3"><strong>Spring 和SpringMVC是两件事</strong></a></li>
 </ul>
 <p>下面的篇幅，来具体谈谈这3个阅读技巧。</p>
-<h4 id="2-1，一个Web项目的容器启动的入口是什么？"><a href="#2-1，一个Web项目的容器启动的入口是什么？" class="headerlink" title="2.1，一个Web项目的容器启动的入口是什么？"></a><span id="jump1">2.1，一个Web项目的容器启动的入口是什么？</span></h4><p>记得最早的时候开始研究<em>Java Web</em>的时候，记得看到一个人写的一句话：<br>“初学 <em>Java Web</em> 开发，请远离各种框架，从 <em>Servlet</em> 开发” </p>
+<h4 id="一个Web项目的容器启动的入口是什么？"><a href="#一个Web项目的容器启动的入口是什么？" class="headerlink" title="一个Web项目的容器启动的入口是什么？"></a><span id="jump1">一个Web项目的容器启动的入口是什么？</span></h4><p>记得最早的时候开始研究<em>Java Web</em>的时候，记得看到一个人写的一句话：<br>“初学 <em>Java Web</em> 开发，请远离各种框架，从 <em>Servlet</em> 开发” </p>
 <blockquote>
 <p><a href="http://www.oschina.net/question/12_52027" target="_blank" rel="external">初学 Java Web 开发，请远离各种框架，从 Servlet 开发</a></p>
 </blockquote>
@@ -376,7 +376,7 @@
 <p>这里碰见过一个事情：我有个外部的服务需要初始化，初始化如下：</p>
 <figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;bean id="qaService" class="com.xxx.utils.qa.qaServiceImpl"&gt;</div><div class="line">    &lt;constructor-arg index="0" value="$&#123;baseURL&#125;" /&gt;</div><div class="line">    &lt;constructor-arg index="1" value="$&#123;token&#125;" /&gt;</div><div class="line">&lt;/bean&gt;</div></pre></td></tr></table></figure>
 <p>我用它的地方是在一个<em>Controller</em>里面，然而放在<em>spring-mvc-config.xml</em>就编译失败，说找不到这个<em>Bean</em>。放在<em>spring-context-web.xml</em>就可以。</p>
-<h4 id="2-2，深入Spring-MVC-Mybatis的一些成熟的工程架构如何配置？"><a href="#2-2，深入Spring-MVC-Mybatis的一些成熟的工程架构如何配置？" class="headerlink" title="2.2，深入Spring MVC + Mybatis的一些成熟的工程架构如何配置？"></a><span id="jump2">2.2，深入Spring MVC + Mybatis的一些成熟的工程架构如何配置？</span></h4><p>你的项目目录应该是这样的：</p>
+<h4 id="深入Spring-MVC-Mybatis的一些成熟的工程架构如何配置？"><a href="#深入Spring-MVC-Mybatis的一些成熟的工程架构如何配置？" class="headerlink" title="深入Spring MVC + Mybatis的一些成熟的工程架构如何配置？"></a><span id="jump2">深入Spring MVC + Mybatis的一些成熟的工程架构如何配置？</span></h4><p>你的项目目录应该是这样的：</p>
 <ul>
 <li><strong>/main/</strong>：<br><em>controller</em>层，<em>service</em>层及<em>DAO</em>层，以及<em>filter</em>：</li>
 </ul>
@@ -413,11 +413,11 @@
 <li>第一个注释就是解决了这个问题，配置了静态文件的本地路径<code>/views/</code>，这里根目录是<em>webapp</em>， 那么所有的<em>CSS，JS，PNG</em>, 都将在来这里找。</li>
 <li>第二个注释其实就是配置<em>FreeMarker</em>的模版路径，一般工程也都放在<em>webapp</em>的<code>/views/</code>下。</li>
 </ul>
-<h4 id="2-3，Spring-和SpringMVC是两件事"><a href="#2-3，Spring-和SpringMVC是两件事" class="headerlink" title="2.3，Spring 和SpringMVC是两件事"></a><span id="jump3">2.3，Spring 和SpringMVC是两件事</span></h4><p>这里碰见过一个事情：我有个外部的服务需要初始化，初始化如下：</p>
+<h4 id="Spring-和SpringMVC是两件事"><a href="#Spring-和SpringMVC是两件事" class="headerlink" title="Spring 和SpringMVC是两件事"></a><span id="jump3">Spring 和SpringMVC是两件事</span></h4><p>这里碰见过一个事情：我有个外部的服务需要初始化，初始化如下：</p>
 <figure class="highlight"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">&lt;bean id="qaService" class="com.xxx.utils.qa.qaServiceImpl"&gt;</div><div class="line">    &lt;constructor-arg index="0" value="$&#123;baseURL&#125;" /&gt;</div><div class="line">    &lt;constructor-arg index="1" value="$&#123;token&#125;" /&gt;</div><div class="line">&lt;/bean&gt;</div></pre></td></tr></table></figure>
 <p>我用它的地方是在一个<em>Controller</em>里面，然而放在<em>spring-mvc-config.xml</em>就编译失败，说找不到这个<em>Bean</em>。具体为啥，可以参考上一节。因为这些<em>Bean</em>并不是有<em>SpringMVC</em>通过<code>@Service</code>标签来统一注入管理。那么它的初始化过程应该要放入<em>spring-context-web.xml</em>，在<em>SpringMVC</em>介入之间就需要实例化。否则当然只是一个接口。 </p>
 <p>所以到这里为止，相信已经对此种类型的项目有了一个基本的阅读技巧。下一章，来说一下笔者在这些基础之上，实践得到的一些感悟。</p>
-<h4 id="3，实践所得"><a href="#3，实践所得" class="headerlink" title="3，实践所得"></a><span id="jump">3，实践所得</span></h4><ul>
+<h3 id="实践所得"><a href="#实践所得" class="headerlink" title="实践所得"></a><span id="jump">实践所得</span></h3><ul>
 <li><strong>能够迅速上手项目，并快速理解项目基本逻辑及架构。</strong><br>在我新接手的一个某智能语音机器人项目中，在没有任何需求设计接口文档的情况下，要开展测试工作，只能先从源码开始，之前的经验帮助了我，理清楚了所有接口的处理逻辑（毕竟是半路接手项目，只能先解决问题为先）。基本上一两天功夫就可以把源码大体逻辑以及框架读懂（当然，大型的项目要花更长的时间）。当时的几个思维导图之一如下：<br><img src="./4.png" alt="Alt text"></li>
 </ul>
 <p>然后就开始欢快的写接口测试用例。</p>
@@ -426,7 +426,7 @@
 <li>略深入理解<em>Spring</em>及<em>SpringMVC</em>。</li>
 <li>找到快速融入研发团队的切入点。其实似乎是没法量化的，然而个人在团队中起到的化学反应相信都能感受到。</li>
 </ul>
-<h4 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h4><p>笔者认为在项目质量保障过程中，提升QA战斗力，需要开拓新思路。提出<strong>Think as developer</strong>，以及<strong>Do as developer</strong>在某一类项目中的一些具体技巧。为读者提供另外一种思维方式。</p>
+<h3 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h3><p>笔者认为在项目质量保障过程中，提升QA战斗力，需要开拓新思路。提出<strong>Think as developer</strong>，以及<strong>Do as developer</strong>在某一类项目中的一些具体技巧。为读者提供另外一种思维方式。</p>
 <p>所以白盒与黑盒不是测试手段，而是测试思维。过度关注开发细节的白盒测试没有意义，从需求出发更加的符合实际中的测试。</p>
 <blockquote>
 <p>引自 <a href="http://mp.weixin.qq.com/s?__biz=MzI2MjEwMDE2OQ==&amp;mid=2648586125&amp;idx=1&amp;sn=e5416afcc83a23b485d6d3b75da41b7e&amp;scene=1&amp;srcid=0521DV7YsyaaWND9LrEuHeYF#rd" target="_blank" rel="external">链接</a></p>
@@ -619,7 +619,7 @@
               
             
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#引言"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1，产品迭代中QA自身的Bug（软肋）是什么？"><span class="nav-number">2.</span> <span class="nav-text">1，产品迭代中QA自身的Bug（软肋）是什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-1-需求偏于口头传述"><span class="nav-number">2.1.</span> <span class="nav-text">1.1 需求偏于口头传述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-需求和实现衔接不能达到无缝连接"><span class="nav-number">2.2.</span> <span class="nav-text">1.2 需求和实现衔接不能达到无缝连接</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2，在项目中的具体实践"><span class="nav-number">3.</span> <span class="nav-text">2，在项目中的具体实践</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1，一个Web项目的容器启动的入口是什么？"><span class="nav-number">3.1.</span> <span class="nav-text">2.1，一个Web项目的容器启动的入口是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-2，深入Spring-MVC-Mybatis的一些成熟的工程架构如何配置？"><span class="nav-number">3.2.</span> <span class="nav-text">2.2，深入Spring MVC + Mybatis的一些成熟的工程架构如何配置？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3，Spring-和SpringMVC是两件事"><span class="nav-number">3.3.</span> <span class="nav-text">2.3，Spring 和SpringMVC是两件事</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3，实践所得"><span class="nav-number">3.4.</span> <span class="nav-text">3，实践所得</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#结语"><span class="nav-number">3.5.</span> <span class="nav-text">结语</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#引言"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#产品迭代中QA自身的Bug（软肋）是什么？"><span class="nav-number">2.</span> <span class="nav-text">产品迭代中QA自身的Bug（软肋）是什么？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#需求偏于口头传述"><span class="nav-number">2.1.</span> <span class="nav-text">需求偏于口头传述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#需求和实现衔接不能达到无缝连接"><span class="nav-number">2.2.</span> <span class="nav-text">需求和实现衔接不能达到无缝连接</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#在项目中的具体实践"><span class="nav-number">3.</span> <span class="nav-text">在项目中的具体实践</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#一个Web项目的容器启动的入口是什么？"><span class="nav-number">3.1.</span> <span class="nav-text">一个Web项目的容器启动的入口是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#深入Spring-MVC-Mybatis的一些成熟的工程架构如何配置？"><span class="nav-number">3.2.</span> <span class="nav-text">深入Spring MVC + Mybatis的一些成熟的工程架构如何配置？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Spring-和SpringMVC是两件事"><span class="nav-number">3.3.</span> <span class="nav-text">Spring 和SpringMVC是两件事</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实践所得"><span class="nav-number">4.</span> <span class="nav-text">实践所得</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#结语"><span class="nav-number">5.</span> <span class="nav-text">结语</span></a></li></ol></div>
             
           </div>
         </section>
